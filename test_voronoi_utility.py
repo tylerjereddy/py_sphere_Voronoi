@@ -6,6 +6,7 @@ import scipy.spatial
 import math
 import voronoi_utility
 import networkx as nx
+import random
 
 class Test_delaunay_triangulation_on_sphere_surface(unittest.TestCase):
 
@@ -86,8 +87,8 @@ class Test_delaunay_triangulation_on_sphere_surface(unittest.TestCase):
             node_dictionary[node_counter] = node_coordinate
             node_counter += 1
 
-        print 'self.simple_sphere_coordinate_array:', self.simple_sphere_coordinate_array
-        print 'self.simple_sphere_coordinate_array.shape:', self.simple_sphere_coordinate_array.shape
+        #print 'self.simple_sphere_coordinate_array:', self.simple_sphere_coordinate_array
+        #print 'self.simple_sphere_coordinate_array.shape:', self.simple_sphere_coordinate_array.shape
         #print 'node_dictionary.values():', node_dictionary.values() #there seem to be multiple duplicates / rounding variations for the polar point at [0. 0. 2.]
 
         def identify_node_based_on_coordinate(coordinate_array,node_dictionary):
@@ -98,10 +99,10 @@ class Test_delaunay_triangulation_on_sphere_surface(unittest.TestCase):
                 if numpy.allclose(node_coordinates,coordinate_array,atol=1e-18):
                     nodenum = node_number
                     num_positives_debug += 1
-                    if num_positives_debug > 1:
-                        print 'duplicate offender:', node_coordinates, coordinate_array
-                    else:
-                        print 'original match:', node_coordinates, coordinate_array
+                    #if num_positives_debug > 1:
+                        #print 'duplicate offender:', node_coordinates, coordinate_array
+                    #else:
+                        #print 'original match:', node_coordinates, coordinate_array
             assert num_positives_debug == 1, "Only a single node should correspond to the input coordinates."
             return nodenum
 
@@ -131,7 +132,7 @@ class Test_delaunay_triangulation_on_sphere_surface(unittest.TestCase):
             #print 'current_list_networkx_edge_tuples:', current_list_networkx_edge_tuples
             G.add_weighted_edges_from(current_list_networkx_edge_tuples) #duplicates will simply be updated
             triangle_counter += 1
-            print 'Triangle:', triangle_counter, 'total edges:', G.size(), 'total nodes:', G.order()
+            #print 'Triangle:', triangle_counter, 'total edges:', G.size(), 'total nodes:', G.order()
 
         #print 'size:', G.size()
         #print 'list of edges:', G.edges()
@@ -141,8 +142,23 @@ class Test_delaunay_triangulation_on_sphere_surface(unittest.TestCase):
         #print 'nodes:', G.nodes()
         #print 'edges:', G.edges()
 
-        print 'ordered set nodes identified:', set(sorted(list_nodes_identified_debug))
+        #print 'ordered set nodes identified:', set(sorted(list_nodes_identified_debug))
         self.assertEqual(len(G),self.num_triangulation_input_points) #obviously, the number of nodes in the graph should match the number of points on the sphere
+
+        #perform the geometric spanner test for a random subset of nodes:
+        num_tests = 0
+        while num_tests < 10: #do 10 random tests 
+            first_node_number = random.randrange(1,len(G),1)
+            second_node_number = random.randrange(1,len(G),1)
+            minimum_distance_between_nodes_following_Delaunay_edges = nx.dijkstra_path_length(G,first_node_number,second_node_number)
+            #compare with straight line Euclidean distance:
+            first_node_coordinate = node_dictionary[first_node_number]
+            second_node_coordinate = node_dictionary[second_node_number]
+            Euclidean_distance = scipy.spatial.distance.euclidean(first_node_coordinate,second_node_coordinate)
+            self.assertLess(minimum_distance_between_nodes_following_Delaunay_edges/Euclidean_distance,2.42) #the geometric spanner condition
+            num_tests += 1
+            
+
 
 
 
