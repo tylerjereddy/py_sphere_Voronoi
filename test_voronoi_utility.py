@@ -12,8 +12,8 @@ class Test_delaunay_triangulation_on_sphere_surface(unittest.TestCase):
     def setUp(self):
         #simple sphere parameters for testing a small triangulation:
         self.simple_sphere_circumdiameter = 4.0
-        self.u, self.v = numpy.mgrid[0:2*numpy.pi:20j, 0:numpy.pi:10j]
-        self.big_u,self.big_v = numpy.mgrid[0:2*numpy.pi:2000j, 0:numpy.pi:1000j]
+        self.u, self.v = numpy.mgrid[0.01:2*numpy.pi-0.01:20j, 0.01:numpy.pi-0.01:10j]
+        self.big_u,self.big_v = numpy.mgrid[0:2*numpy.pi:2000j, 0:numpy.pi:1000j] #will have to adjust the boundaries here as well if the large data set is also to be used in testing
 
         def generate_sphere_coords(u,v):
             x = (self.simple_sphere_circumdiameter/2.0 * (numpy.cos(u)*numpy.sin(v))).ravel()
@@ -79,18 +79,30 @@ class Test_delaunay_triangulation_on_sphere_surface(unittest.TestCase):
 
         node_dictionary = {}
         node_counter = 1
+        list_nodes_identified_debug = []
 
         #assign an integer node (vertex) number to each unique coordinate on the test sphere:
         for node_coordinate in self.simple_sphere_coordinate_array:
             node_dictionary[node_counter] = node_coordinate
             node_counter += 1
 
+        print 'self.simple_sphere_coordinate_array:', self.simple_sphere_coordinate_array
+        print 'self.simple_sphere_coordinate_array.shape:', self.simple_sphere_coordinate_array.shape
+        #print 'node_dictionary.values():', node_dictionary.values() #there seem to be multiple duplicates / rounding variations for the polar point at [0. 0. 2.]
+
         def identify_node_based_on_coordinate(coordinate_array,node_dictionary):
             '''Return the node number based on the coordinates in the original test sphere data set.'''
             nodenum = 0
+            num_positives_debug = 0
             for node_number, node_coordinates in node_dictionary.iteritems():
-                if numpy.allclose(node_coordinates,coordinate_array):
+                if numpy.allclose(node_coordinates,coordinate_array,atol=1e-18):
                     nodenum = node_number
+                    num_positives_debug += 1
+                    if num_positives_debug > 1:
+                        print 'duplicate offender:', node_coordinates, coordinate_array
+                    else:
+                        print 'original match:', node_coordinates, coordinate_array
+            assert num_positives_debug == 1, "Only a single node should correspond to the input coordinates."
             return nodenum
 
         def produce_networkx_edges_from_triangle_data(triangle_array_data,node_dictionary):
@@ -104,6 +116,7 @@ class Test_delaunay_triangulation_on_sphere_surface(unittest.TestCase):
                 second_vertex_coord = triangle_array_data[second_triangle_row_index]
                 graph_node_number_first_vertex_current_edge = identify_node_based_on_coordinate(first_vertex_coord,node_dictionary)
                 graph_node_number_second_vertex_current_edge = identify_node_based_on_coordinate(second_vertex_coord,node_dictionary)
+                list_nodes_identified_debug.extend([graph_node_number_first_vertex_current_edge,graph_node_number_second_vertex_current_edge]) #missing nodes with debug list growth here, but no missing nodes if I grow the debug list from within the identify_node_based_on_coordinate() function itself; why????
                 #the edge weight for networkx should be the Euclidean straight-line distance between the vertices
                 weight = scipy.spatial.distance.euclidean(first_vertex_coord,second_vertex_coord)
                 networkx_edge_tuple = (graph_node_number_first_vertex_current_edge,graph_node_number_second_vertex_current_edge,weight)
@@ -128,7 +141,9 @@ class Test_delaunay_triangulation_on_sphere_surface(unittest.TestCase):
         #print 'nodes:', G.nodes()
         #print 'edges:', G.edges()
 
+        print 'ordered set nodes identified:', set(sorted(list_nodes_identified_debug))
         self.assertEqual(len(G),self.num_triangulation_input_points) #obviously, the number of nodes in the graph should match the number of points on the sphere
+
 
 
 
