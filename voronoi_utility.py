@@ -61,7 +61,7 @@ def produce_array_Voronoi_vertices_on_sphere_surface(facet_coordinate_array_Dela
         sphere_centroid_to_normal_distance = scipy.spatial.distance.euclidean(sphere_centroid,facet_normal_unit_vector)
         delta_value = sphere_centroid_to_normal_distance - triangle_to_normal_distance
         if delta_value < -0.1: #need to rotate the vector so that it faces out of the circle
-            print 'delta_value:', delta_value
+            #print 'delta_value:', delta_value
             facet_normal_unit_vector *= -1 #I seem to get a fair number of degenerate / duplicate Voronoi vertices (is this ok?! will have to filter them out I think ?!)
         list_triangle_facet_normals.append(facet_normal_unit_vector)
 
@@ -112,22 +112,31 @@ class Voronoi_Sphere_Surface:
         assert facet_coordinate_array_Delaunay_triangulation.shape[0] == array_Voronoi_vertices.shape[0], "The number of Delaunay triangles should match the number of Voronoi vertices."
         #now, the tricky part--building up a useful Voronoi polygon data structure
         facet_index_counter = 0
-        edge_dictionary = {} #store the coordinates of the edges for all Voronoi edges in the system, classified by the Voronoi vertex shared by all the edges
-        #test_dictionary = {}
+        edge_dictionary = {} #store the coordinates of all Voronoi edges in the system, classified by the Voronoi vertex shared by all the edges
         for Delaunay_facet_neighbour_index_array in self.hull_instance.neighbors:
             voronoi_vertex_coordinate_corresponding_to_current_Delaunay_facet = array_Voronoi_vertices[facet_index_counter]
             list_Voronoi_edges_including_current_facet = []
             for index_of_neighbouring_facet in Delaunay_facet_neighbour_index_array:
+                if numpy.allclose(voronoi_vertex_coordinate_corresponding_to_current_Delaunay_facet, array_Voronoi_vertices[index_of_neighbouring_facet],atol=1e-7): 
+                    continue #avoid vertex-vertex 0-length edges
                 current_Voronoi_edge_array = numpy.array([voronoi_vertex_coordinate_corresponding_to_current_Delaunay_facet, array_Voronoi_vertices[index_of_neighbouring_facet]])
                 list_Voronoi_edges_including_current_facet.append(current_Voronoi_edge_array)
             edge_dictionary[facet_index_counter] = numpy.array(list_Voronoi_edges_including_current_facet)
-            #test_dictionary[facet_index_counter] = numpy.concatenate((voronoi_vertex_coordinate_corresponding_to_current_Delaunay_facet[numpy.newaxis,:],facet_coordinate_array_Delaunay_triangulation[facet_index_counter]))
             facet_index_counter += 1
         #so, edge_dictionary should looking something like this for a given sample entry: {0: [ [Voronoi_edge_coord_1, Voronoi_edge_coord_2], [Voronoi_edge_coord_1, Voronoi_edge_coord_3], [Voronoi_edge_coord_1,Voronoi_edge_coord_4]], ...}
         #also, I'm anticipating a lot of possible duplication of edges in edge_dictionary (i.e., edges shared with neighbours)
         #furthermore, these would only be straight-line edges, rather than the desired great-circle edges, although the vertices are of course the same in both cases [so, it's really just a plotting issue I think]
-        #return test_dictionary #temporary return for testing purposes
-        return edge_dictionary #temporary return for testing purposes
+        #return edge_dictionary #temporary return for testing purposes
+        
+        #the Voronoi edges contained in edge_dictionary look reasonable by visual inspection, but we don't have the edges organized into polygons surrounding a single data point just yet
+
+        #I want to calculate the midpoints of all Voronoi edges to simplify downstream data structuring (the vertices can be equidistant to multiple generators and are more confusing to work with here I think)
+        edge_midpoint_dictionary = {} 
+        for Voronoi_vertex_number, array_Voronoi_edges_associated_with_this_vertex in edge_dictionary.iteritems():
+            array_edge_midpoints_associated_with_this_vertex = numpy.average(array_Voronoi_edges_associated_with_this_vertex,axis=1)
+            edge_midpoint_dictionary[Voronoi_vertex_number] = array_edge_midpoints_associated_with_this_vertex
+        
+        return (edge_dictionary,edge_midpoint_dictionary) #temporary test return
 
 
 
