@@ -59,7 +59,9 @@ def produce_array_Voronoi_vertices_on_sphere_surface(facet_coordinate_array_Dela
         #the Euclidean distance between the triangle centroid and the facet normal should be smaller than the sphere centroid to facet normal distance, otherwise, need to invert the vector
         triangle_to_normal_distance = scipy.spatial.distance.euclidean(triangle_centroid,facet_normal_unit_vector)
         sphere_centroid_to_normal_distance = scipy.spatial.distance.euclidean(sphere_centroid,facet_normal_unit_vector)
-        if sphere_centroid_to_normal_distance < triangle_to_normal_distance: #need to rotate the vector so that it faces out of the circle
+        delta_value = sphere_centroid_to_normal_distance - triangle_to_normal_distance
+        if delta_value < -0.1: #need to rotate the vector so that it faces out of the circle
+            print 'delta_value:', delta_value
             facet_normal_unit_vector *= -1 #I seem to get a fair number of degenerate / duplicate Voronoi vertices (is this ok?! will have to filter them out I think ?!)
         list_triangle_facet_normals.append(facet_normal_unit_vector)
 
@@ -99,6 +101,7 @@ class Voronoi_Sphere_Surface:
         '''Determine the Voronoi vertices on the surface of the sphere given the vertices of the Delaunay triangulation on the surface of the sphere. Inspired by response here: http://stackoverflow.com/a/22234783'''
         facet_coordinate_array_Delaunay_triangulation = produce_triangle_vertex_coordinate_array_Delaunay_sphere(self.hull_instance)
         array_Voronoi_vertices = produce_array_Voronoi_vertices_on_sphere_surface(facet_coordinate_array_Delaunay_triangulation,self.estimated_sphere_radius,self.sphere_centroid)
+        assert facet_coordinate_array_Delaunay_triangulation.shape[0] == array_Voronoi_vertices.shape[0], "The number of Delaunay triangles should match the number of Voronoi vertices."
         return array_Voronoi_vertices
 
     def Voronoi_polygons_spherical_surface(self):
@@ -106,6 +109,7 @@ class Voronoi_Sphere_Surface:
         #generate the array of Voronoi vertices:
         facet_coordinate_array_Delaunay_triangulation = produce_triangle_vertex_coordinate_array_Delaunay_sphere(self.hull_instance)
         array_Voronoi_vertices = produce_array_Voronoi_vertices_on_sphere_surface(facet_coordinate_array_Delaunay_triangulation,self.estimated_sphere_radius,self.sphere_centroid)
+        assert facet_coordinate_array_Delaunay_triangulation.shape[0] == array_Voronoi_vertices.shape[0], "The number of Delaunay triangles should match the number of Voronoi vertices."
         #now, the tricky part--building up a useful Voronoi polygon data structure
         facet_index_counter = 0
         edge_dictionary = {} #store the coordinates of the edges for all Voronoi edges in the system, classified by the Voronoi vertex shared by all the edges
