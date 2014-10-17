@@ -136,7 +136,15 @@ class Voronoi_Sphere_Surface:
             array_edge_midpoints_associated_with_this_vertex = numpy.average(array_Voronoi_edges_associated_with_this_vertex,axis=1)
             edge_midpoint_dictionary[Voronoi_vertex_number] = array_edge_midpoints_associated_with_this_vertex
         
-        return (edge_dictionary,edge_midpoint_dictionary) #temporary test return
+        #find and store the indices of the generator (original data) points that are closest to each Voronoi edge midpoint (some will have multiple closest points)
+        dictionary_closest_generator_indices_per_edge_midpoint = {}
+        for Voronoi_vertex_number, array_edge_midpoints_associated_with_this_vertex in edge_midpoint_dictionary.iteritems():
+            distance_matrix_Voronoi_edge_midpoints_to_original_data_points = scipy.spatial.distance.cdist(array_edge_midpoints_associated_with_this_vertex,self.original_point_array)
+            array_indices_for_generators_closest_to_edge_midpoints = numpy.argmin(distance_matrix_Voronoi_edge_midpoints_to_original_data_points,axis=1) #each row (midpoint) should have a set of indices for the closest original data points
+            dictionary_closest_generator_indices_per_edge_midpoint[Voronoi_vertex_number] = array_indices_for_generators_closest_to_edge_midpoints
+        #a representative element of the above dictionary looks like this: {0: array([104,114]),...}
+
+        return (edge_dictionary,edge_midpoint_dictionary,dictionary_closest_generator_indices_per_edge_midpoint) #temporary test return
 
 
 
