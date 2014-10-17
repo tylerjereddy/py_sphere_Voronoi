@@ -140,11 +140,29 @@ class Voronoi_Sphere_Surface:
         dictionary_closest_generator_indices_per_edge_midpoint = {}
         for Voronoi_vertex_number, array_edge_midpoints_associated_with_this_vertex in edge_midpoint_dictionary.iteritems():
             distance_matrix_Voronoi_edge_midpoints_to_original_data_points = scipy.spatial.distance.cdist(array_edge_midpoints_associated_with_this_vertex,self.original_point_array)
+            #print 'Voronoi_vertex_number:', Voronoi_vertex_number
+            #print 'argmin of distance_matrix_Voronoi_edge_midpoints_to_original_data_points:', numpy.argmin(distance_matrix_Voronoi_edge_midpoints_to_original_data_points,axis=1)
             array_indices_for_generators_closest_to_edge_midpoints = numpy.argmin(distance_matrix_Voronoi_edge_midpoints_to_original_data_points,axis=1) #each row (midpoint) should have a set of indices for the closest original data points
             dictionary_closest_generator_indices_per_edge_midpoint[Voronoi_vertex_number] = array_indices_for_generators_closest_to_edge_midpoints
         #a representative element of the above dictionary looks like this: {0: array([104,114]),...}
 
-        return (edge_dictionary,edge_midpoint_dictionary,dictionary_closest_generator_indices_per_edge_midpoint) #temporary test return
+        #now I want to reorganize the data structure such that I capture the Voronoi vertices that surround each generator (original data) point
+        #for any given generator, this should include all Voronoi edge midpoints that include that generator amongst their 'closest'
+        dictionary_generator_Voronoi_polygons = {}
+        for generator_index, generator_coordinate in enumerate(self.original_point_array):
+            #print 'generator_index:', generator_index
+            list_voronoi_vertices_current_generator = []
+            for Voronoi_vertex_number, array_indices_for_generators_closest_to_edge_midpoints in dictionary_closest_generator_indices_per_edge_midpoint.iteritems():
+                if generator_index in array_indices_for_generators_closest_to_edge_midpoints:
+                    indices_of_edges_bounding_current_generator = numpy.where(array_indices_for_generators_closest_to_edge_midpoints == generator_index)
+                    #print 'indices_of_edges_bounding_current_generator:', indices_of_edges_bounding_current_generator
+                    vertices_of_edges_bounding_current_generator = edge_dictionary[Voronoi_vertex_number][indices_of_edges_bounding_current_generator]
+                    for vertex in vertices_of_edges_bounding_current_generator:
+                        list_voronoi_vertices_current_generator.extend(vertex)
+            dictionary_generator_Voronoi_polygons[generator_index] = {'generator_coordinate':generator_coordinate,'voronoi_polygon_vertices':numpy.array(list_voronoi_vertices_current_generator)}
+
+
+        return (edge_dictionary,edge_midpoint_dictionary,dictionary_closest_generator_indices_per_edge_midpoint,dictionary_generator_Voronoi_polygons) #temporary test return
 
 
 
