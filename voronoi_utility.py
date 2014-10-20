@@ -6,6 +6,7 @@ import scipy
 import scipy.spatial
 import numpy
 import numpy.linalg
+import pandas
 
 def convert_cartesian_array_to_spherical_array(coord_array,angle_measure='radians'):
     '''Take shape (N,3) cartesian coord_array and return an array of the same shape in spherical polar form (r, theta, phi). Based on StackOverflow response: http://stackoverflow.com/a/4116899
@@ -150,7 +151,7 @@ class Voronoi_Sphere_Surface:
         #for any given generator, this should include all Voronoi edge midpoints that include that generator amongst their 'closest'
         dictionary_generator_Voronoi_polygons = {}
         for generator_index, generator_coordinate in enumerate(self.original_point_array):
-            #print 'generator_index:', generator_index
+            print 'generator_index:', generator_index
             list_voronoi_vertices_current_generator = []
             for Voronoi_vertex_number, array_indices_for_generators_closest_to_edge_midpoints in dictionary_closest_generator_indices_per_edge_midpoint.iteritems():
                 if generator_index in array_indices_for_generators_closest_to_edge_midpoints:
@@ -159,7 +160,15 @@ class Voronoi_Sphere_Surface:
                     vertices_of_edges_bounding_current_generator = edge_dictionary[Voronoi_vertex_number][indices_of_edges_bounding_current_generator]
                     for vertex in vertices_of_edges_bounding_current_generator:
                         list_voronoi_vertices_current_generator.extend(vertex)
-            dictionary_generator_Voronoi_polygons[generator_index] = {'generator_coordinate':generator_coordinate,'voronoi_polygon_vertices':numpy.array(list_voronoi_vertices_current_generator)}
+            #try using pandas to remove duplicate rows (vertices) before storing in dictionary
+            array_Voronoi_vertices = numpy.around(numpy.array(list_voronoi_vertices_current_generator),decimals=8) #rounding decimals as pre-processing for duplicate removal
+            df = pandas.DataFrame(array_Voronoi_vertices)
+            print 'df shape before:', df.shape
+            df.drop_duplicates(inplace=True)
+            print 'df shape after deduplication:', df.shape
+            array_Voronoi_vertices = df.values #convert back to numpy array after dropping duplicates
+            print array_Voronoi_vertices
+            dictionary_generator_Voronoi_polygons[generator_index] = {'generator_coordinate':generator_coordinate,'voronoi_polygon_vertices':array_Voronoi_vertices}
 
 
         return (edge_dictionary,edge_midpoint_dictionary,dictionary_closest_generator_indices_per_edge_midpoint,dictionary_generator_Voronoi_polygons) #temporary test return
