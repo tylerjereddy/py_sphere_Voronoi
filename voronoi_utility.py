@@ -163,11 +163,52 @@ class Voronoi_Sphere_Surface:
             #try using pandas to remove duplicate rows (vertices) before storing in dictionary
             array_Voronoi_vertices = numpy.around(numpy.array(list_voronoi_vertices_current_generator),decimals=8) #rounding decimals as pre-processing for duplicate removal
             df = pandas.DataFrame(array_Voronoi_vertices)
-            print 'df shape before:', df.shape
+            #print 'df shape before:', df.shape
             df.drop_duplicates(inplace=True)
-            print 'df shape after deduplication:', df.shape
+            #print 'df shape after deduplication:', df.shape
             array_Voronoi_vertices = df.values #convert back to numpy array after dropping duplicates
-            print array_Voronoi_vertices
+
+            print 'before array_Voronoi_vertices:', array_Voronoi_vertices
+            print 'before array_Voronoi_vertices.shape:', array_Voronoi_vertices.shape
+            #now, I want to sort the polygon vertices in a consistent, non-intersecting fashion
+            if array_Voronoi_vertices.shape[0] > 3:
+                polygon_hull_object = scipy.spatial.ConvexHull(array_Voronoi_vertices[...,:2]) #trying to project to 2D for edge ordering, and then restore to 3D after
+                neighbors = polygon_hull_object.neighbors
+                simplices = polygon_hull_object.simplices
+                list_indices_to_sort_polygon_vertices = []
+                current_facet_index = 0
+                for indices_of_points_current_edge in simplices:
+                    print 'indices_of_points_current_edge:', indices_of_points_current_edge
+                    list_indices_to_extend = []
+
+                    index_of_point_first_vertex_current_edge = indices_of_points_current_edge[0]
+                    index_of_point_second_vertex_current_edge = indices_of_points_current_edge[1]
+                    print 'before test; list_indices_to_sort_polygon_vertices:', list_indices_to_sort_polygon_vertices
+                    if index_of_point_first_vertex_current_edge in list_indices_to_sort_polygon_vertices or index_of_point_second_vertex_current_edge in list_indices_to_sort_polygon_vertices:
+                        continue
+                    else:
+                        print 'vertex not in list of indices'
+                        print 'old list_indices_to_extend:', list_indices_to_extend
+                        list_indices_to_extend.extend([index_of_point_first_vertex_current_edge,index_of_point_second_vertex_current_edge])
+                        print 'new list_indices_to_extend:', list_indices_to_extend
+
+                    index_neighbor_vertex_for_first_point = simplices[neighbors[current_facet_index][0]][0]
+                    if not index_neighbor_vertex_for_first_point in list_indices_to_sort_polygon_vertices:
+                        list_indices_to_extend = [index_neighbor_vertex_for_first_point] +  list_indices_to_extend
+                    index_neighbor_vertex_for_second_point = simplices[neighbors[current_facet_index][1]][1]
+                    if not index_neighbor_vertex_for_second_point in list_indices_to_sort_polygon_vertices:
+                        list_indices_to_extend =  list_indices_to_extend + [index_neighbor_vertex_for_second_point]
+                    print 'list_indices_to_extend:', list_indices_to_extend
+                    
+                    list_indices_to_sort_polygon_vertices.extend(list_indices_to_extend)
+                    current_facet_index += 1
+
+                point_index_sorting_array = numpy.array(list_indices_to_sort_polygon_vertices)     
+                print 'point_index_sorting_array:', point_index_sorting_array
+                array_Voronoi_vertices = array_Voronoi_vertices[point_index_sorting_array]
+
+            print 'after array_Voronoi_vertices:', array_Voronoi_vertices
+            print 'after array_Voronoi_vertices.shape:', array_Voronoi_vertices.shape
             dictionary_generator_Voronoi_polygons[generator_index] = {'generator_coordinate':generator_coordinate,'voronoi_polygon_vertices':array_Voronoi_vertices}
 
 
