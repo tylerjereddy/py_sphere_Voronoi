@@ -151,7 +151,7 @@ class Voronoi_Sphere_Surface:
         #for any given generator, this should include all Voronoi edge midpoints that include that generator amongst their 'closest'
         dictionary_generator_Voronoi_polygons = {}
         for generator_index, generator_coordinate in enumerate(self.original_point_array):
-            print 'generator_index:', generator_index
+            #print 'generator_index:', generator_index
             list_voronoi_vertices_current_generator = []
             for Voronoi_vertex_number, array_indices_for_generators_closest_to_edge_midpoints in dictionary_closest_generator_indices_per_edge_midpoint.iteritems():
                 if generator_index in array_indices_for_generators_closest_to_edge_midpoints:
@@ -168,47 +168,12 @@ class Voronoi_Sphere_Surface:
             #print 'df shape after deduplication:', df.shape
             array_Voronoi_vertices = df.values #convert back to numpy array after dropping duplicates
 
-            print 'before array_Voronoi_vertices:', array_Voronoi_vertices
-            print 'before array_Voronoi_vertices.shape:', array_Voronoi_vertices.shape
             #now, I want to sort the polygon vertices in a consistent, non-intersecting fashion
             if array_Voronoi_vertices.shape[0] > 3:
                 polygon_hull_object = scipy.spatial.ConvexHull(array_Voronoi_vertices[...,:2]) #trying to project to 2D for edge ordering, and then restore to 3D after
-                neighbors = polygon_hull_object.neighbors
-                simplices = polygon_hull_object.simplices
-                list_indices_to_sort_polygon_vertices = []
-                current_facet_index = 0
-                for indices_of_points_current_edge in simplices:
-                    print 'indices_of_points_current_edge:', indices_of_points_current_edge
-                    list_indices_to_extend = []
+                point_indices_ordered_vertex_array = polygon_hull_object.vertices
+                array_Voronoi_vertices = array_Voronoi_vertices[point_indices_ordered_vertex_array]
 
-                    index_of_point_first_vertex_current_edge = indices_of_points_current_edge[0]
-                    index_of_point_second_vertex_current_edge = indices_of_points_current_edge[1]
-                    print 'before test; list_indices_to_sort_polygon_vertices:', list_indices_to_sort_polygon_vertices
-                    if index_of_point_first_vertex_current_edge in list_indices_to_sort_polygon_vertices or index_of_point_second_vertex_current_edge in list_indices_to_sort_polygon_vertices:
-                        continue
-                    else:
-                        print 'vertex not in list of indices'
-                        print 'old list_indices_to_extend:', list_indices_to_extend
-                        list_indices_to_extend.extend([index_of_point_first_vertex_current_edge,index_of_point_second_vertex_current_edge])
-                        print 'new list_indices_to_extend:', list_indices_to_extend
-
-                    index_neighbor_vertex_for_first_point = simplices[neighbors[current_facet_index][0]][0]
-                    if not index_neighbor_vertex_for_first_point in list_indices_to_sort_polygon_vertices:
-                        list_indices_to_extend = [index_neighbor_vertex_for_first_point] +  list_indices_to_extend
-                    index_neighbor_vertex_for_second_point = simplices[neighbors[current_facet_index][1]][1]
-                    if not index_neighbor_vertex_for_second_point in list_indices_to_sort_polygon_vertices:
-                        list_indices_to_extend =  list_indices_to_extend + [index_neighbor_vertex_for_second_point]
-                    print 'list_indices_to_extend:', list_indices_to_extend
-                    
-                    list_indices_to_sort_polygon_vertices.extend(list_indices_to_extend)
-                    current_facet_index += 1
-
-                point_index_sorting_array = numpy.array(list_indices_to_sort_polygon_vertices)     
-                print 'point_index_sorting_array:', point_index_sorting_array
-                array_Voronoi_vertices = array_Voronoi_vertices[point_index_sorting_array]
-
-            print 'after array_Voronoi_vertices:', array_Voronoi_vertices
-            print 'after array_Voronoi_vertices.shape:', array_Voronoi_vertices.shape
             dictionary_generator_Voronoi_polygons[generator_index] = {'generator_coordinate':generator_coordinate,'voronoi_polygon_vertices':array_Voronoi_vertices}
 
 
