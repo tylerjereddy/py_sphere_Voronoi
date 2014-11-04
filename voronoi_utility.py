@@ -144,6 +144,7 @@ class Voronoi_Sphere_Surface:
                 polygon_hull_object = scipy.spatial.ConvexHull(current_array_Voronoi_vertices[...,:2]) #trying to project to 2D for edge ordering, and then restore to 3D after
                 point_indices_ordered_vertex_array = polygon_hull_object.vertices
                 current_array_Voronoi_vertices = current_array_Voronoi_vertices[point_indices_ordered_vertex_array]
+            assert current_array_Voronoi_vertices.shape[0] >= 3, "All generators should be within Voronoi regions (polygons with at least 3 vertices)."
             dictionary_sorted_Voronoi_point_coordinates_for_each_generator[generator_index] = current_array_Voronoi_vertices
 
         return (generator_Voronoi_region_dictionary, dictionary_sorted_Voronoi_point_coordinates_for_each_generator)
