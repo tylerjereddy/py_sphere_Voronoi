@@ -18,7 +18,7 @@ def calculate_derivative_great_circle_arc_specified_point(edge_coordinates, sphe
     #there's probably an appropriate interpolation method in scipy, but for now I'm coding a progressive interpolation with averaging toward the vertex point
     current_midpoint = numpy.average(edge_coordinates,axis=0)
     #print 'current_midpoint:', current_midpoint
-    num_averages = 10000
+    num_averages = 27 #careful! the distance between the edges becomes incredibly small to the point of floating point precision if we go too high here [conversely, insufficient iterations will be a poor estimate of the tangent because we want the limit as delta x approaches 0...]
     while num_averages > 0:
         current_midpoint = (current_midpoint + derivative_vertex) / 2.
         num_averages -= 1
