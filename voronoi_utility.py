@@ -8,6 +8,28 @@ import numpy
 import numpy.linalg
 import pandas
 
+def calculate_derivative_great_circle_arc_specified_point(edge_coordinates, sphere_radius):
+    '''Inspired loosely by http://glowingpython.blogspot.co.uk/2013/02/visualizing-tangent.html
+        Basic idea is to calculate the derivative of the great circle arc (spanning over the edge_coordinates) at a specified coordinate, as this will be important in the calculation of spherical polygon surface areas. Would be convenient to return a vector for the derivative line.'''
+    derivative_estimate_vector = numpy.zeros((2,3))
+    #assuming the second edge coordinate is the vertex where we want to calculate the derivative, I think one way to get an estimate of the derivative is to calculate successive straight-line midpoint values closer and closer to that point and then convert to spherical coordinates, project upward to great circle arc, and then convert back to Cartesian to give a really small derivative estimate vector
+    derivative_vertex = edge_coordinates[1]
+    #print 'derivative_vertex:', derivative_vertex
+    #there's probably an appropriate interpolation method in scipy, but for now I'm coding a progressive interpolation with averaging toward the vertex point
+    current_midpoint = numpy.average(edge_coordinates,axis=0)
+    #print 'current_midpoint:', current_midpoint
+    num_averages = 10000
+    while num_averages > 0:
+        current_midpoint = (current_midpoint + derivative_vertex) / 2.
+        num_averages -= 1
+    #so, after some rather large number of iterations the current_midpoint should be extremely close to the derivative vertex and is ready to be projected up to the great circle arc of this edge
+    spherical_coordinate_array_current_midpoint = convert_cartesian_array_to_spherical_array(current_midpoint)
+    spherical_coordinate_array_current_midpoint = numpy.array([sphere_radius, spherical_coordinate_array_current_midpoint[1],spherical_coordinate_array_current_midpoint[2]]) #projection
+    first_coordinate_midpoint_vector = convert_spherical_array_to_cartesian_array(spherical_coordinate_array_current_midpoint)
+    derivative_estimate_vector[0,...] = first_coordinate_midpoint_vector
+    derivative_estimate_vector[1,...] = derivative_vertex
+    return derivative_estimate_vector #when calculating the angle between these in another function, would probably want to translate the derivative vertex to the origin
+
 def convert_cartesian_array_to_spherical_array(coord_array,angle_measure='radians'):
     '''Take shape (N,3) cartesian coord_array and return an array of the same shape in spherical polar form (r, theta, phi). Based on StackOverflow response: http://stackoverflow.com/a/4116899
     use radians for the angles by default, degrees if angle_measure == 'degrees' '''
