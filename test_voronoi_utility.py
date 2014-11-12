@@ -164,7 +164,7 @@ class Test_derivative_great_circle_arc(unittest.TestCase):
     def setUp(self):
         self.unit_circle_great_arc_array = numpy.array([[-1,0,0],[0,1,0]]) #should have second-point derivative near zero
         self.unit_circle_radius = 1.0
-        self.unit_circle_great_arc_array_deriv_slope_one = numpy.array([[-1,0,0],[-0.5,0.5,0]]) #should have second-point derivative of exactly 1.0 (-x/y = 1.0)
+        self.unit_circle_great_arc_array_deriv_slope_one = numpy.array([[-1,0,0],[-math.sqrt(0.5),math.sqrt(0.5),0]]) #should have second-point derivative of exactly 1.0 (-x/y = 1.0)
 
     def tearDown(self):
         del self.unit_circle_great_arc_array
@@ -175,7 +175,7 @@ class Test_derivative_great_circle_arc(unittest.TestCase):
         derivative_vector_3D = voronoi_utility.calculate_derivative_great_circle_arc_specified_point(self.unit_circle_great_arc_array,self.unit_circle_radius)
         #because Z is 0 for the input great circle (it is planar even if it is in 3D space) we can basically say that the slope (with respect to y) is zero (the derivative vector should be approx a flat line)
         difference_array = numpy.diff(derivative_vector_3D,axis=0) #should be [dx,dy,dz]
-        derivative_estimate = -difference_array[0,1] / difference_array[0,0] # dy/dx slope should be close to zero (negative because want to subtract final point from first)
+        derivative_estimate = difference_array[0,1] / difference_array[0,0] # dy/dx slope should be close to zero (negative because want to subtract final point from first)
         numpy.testing.assert_approx_equal(derivative_estimate,0.0,significant=5,err_msg="Derivative should be close to 0.")
 
     def test_3D_unit_circle_great_arc_derivative_NON_zero(self):
@@ -184,7 +184,7 @@ class Test_derivative_great_circle_arc(unittest.TestCase):
         We know that the derivative of a unit circle at point (x,y) is -x/y for all points where y is not = 0. I think this should be fine for 3D as well as long as I stick with an equatorial (Z=0) input data set.''' 
         derivative_vector_3D = voronoi_utility.calculate_derivative_great_circle_arc_specified_point(self.unit_circle_great_arc_array_deriv_slope_one,self.unit_circle_radius)
         difference_array = numpy.diff(derivative_vector_3D,axis=0)
-        derivative_estimate = -difference_array[0,1] / difference_array[0,0] # dy/dx slope should be close to ONE
+        derivative_estimate = difference_array[0,1] / difference_array[0,0] # dy/dx slope should be close to ONE
         numpy.testing.assert_approx_equal(derivative_estimate,1.0,significant=5,err_msg="Derivative should be close to 1.")
 
 
