@@ -187,6 +187,19 @@ class Test_derivative_great_circle_arc(unittest.TestCase):
         derivative_estimate = difference_array[0,1] / difference_array[0,0] # dy/dx slope should be close to ONE
         numpy.testing.assert_approx_equal(derivative_estimate,1.0,significant=5,err_msg="Derivative should be close to 1.")
 
+class Test_spherical_polygon_angle_summation(unittest.TestCase):
+
+    def setUp(self):
+        self.spherical_triangle_coordinate_array = numpy.array([[0,0,1],[0,1,0],[0,0,-1]]) #3 points on a unit sphere
+
+    def tearDown(self):
+        del self.spherical_triangle_coordinate_array
+
+    def test_spherical_triangle_sum_inner_angles(self):
+        '''Test my spherical polygon inner angle summation code on the simple case of a spherical triangle where we know that the sum of the inner angles must be between pi and 3 * pi radians (http://mathworld.wolfram.com/SphericalTriangle.html).'''
+        theta = voronoi_utility.calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(self.spherical_triangle_coordinate_array,1.0)
+        self.assertLessEqual(theta,3. * math.pi,msg='theta must be less than or equal to 3 * pi radians for a spherical triangle')
+        self.assertGreaterEqual(theta,math.pi,msg='theta must be greater than or equal to pi radians for a spherical triangle')
 
         
         

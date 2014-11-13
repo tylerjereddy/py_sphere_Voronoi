@@ -7,6 +7,49 @@ import scipy.spatial
 import numpy
 import numpy.linalg
 import pandas
+import math
+
+def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius):
+    '''Takes an array of ordered Voronoi polygon vertices (for a single generator) and calculates the sum of the inner angles on the sphere surface. The resulting value is theta in the equation provided here: http://mathworld.wolfram.com/SphericalPolygon.html '''
+    num_vertices_in_Voronoi_polygon = array_ordered_Voronoi_polygon_vertices.shape[0] #the number of rows == number of vertices in polygon
+    #two edges (great circle arcs actually) per vertex are needed to calculate tangent vectors / inner angle at that vertex
+    current_vertex_index = 0
+    list_Voronoi_poygon_angles_radians = []
+    while current_vertex_index < num_vertices_in_Voronoi_polygon:
+        current_vertex_coordinate = array_ordered_Voronoi_polygon_vertices[current_vertex_index]
+        if current_vertex_index == 0:
+            previous_vertex_index = num_vertices_in_Voronoi_polygon - 1
+        else:
+            previous_vertex_index = current_vertex_index - 1
+        if current_vertex_index == num_vertices_in_Voronoi_polygon - 1:
+            next_vertex_index = 0
+        else:
+            next_vertex_index = current_vertex_index + 1
+        first_edge_coordinates = numpy.zeros((2,3))
+        second_edge_coordinates = numpy.zeros((2,3))
+        first_edge_coordinates[0] = array_ordered_Voronoi_polygon_vertices[previous_vertex_index]
+        first_edge_coordinates[1] = array_ordered_Voronoi_polygon_vertices[current_vertex_index] #always end at the vertex you want to calculate angle at because of the way my derivative code works
+        second_edge_coordinates[0] = array_ordered_Voronoi_polygon_vertices[next_vertex_index]
+        second_edge_coordinates[1] = array_ordered_Voronoi_polygon_vertices[current_vertex_index] #always end at the vertex you want to calculate angle at because of the way my derivative code works
+
+        
+
+        first_derivative_vector = calculate_derivative_great_circle_arc_specified_point(first_edge_coordinates,sphere_radius) 
+        second_derivative_vector = calculate_derivative_great_circle_arc_specified_point(second_edge_coordinates,sphere_radius) 
+        #now, move the vertex point to the origin so the vectors are origin-based prior to dot product / angle calculation
+        vertex_coordinate = array_ordered_Voronoi_polygon_vertices[current_vertex_index]
+        translated_vector_1 = first_derivative_vector[0] - vertex_coordinate
+        translated_vector_2 = second_derivative_vector[0] - vertex_coordinate
+
+        tangent_vector_dot_product = numpy.dot(translated_vector_1,translated_vector_2)
+        current_vertex_inner_angle_on_sphere_surface = math.acos(tangent_vector_dot_product) #angle in radians
+        list_Voronoi_poygon_angles_radians.append(current_vertex_inner_angle_on_sphere_surface)
+
+        current_vertex_index += 1
+
+    theta = numpy.sum(numpy.array(list_Voronoi_poygon_angles_radians))
+
+    return theta #in radians at the moment
 
 def calculate_derivative_great_circle_arc_specified_point(edge_coordinates, sphere_radius):
     '''Inspired loosely by http://glowingpython.blogspot.co.uk/2013/02/visualizing-tangent.html
