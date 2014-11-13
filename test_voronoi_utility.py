@@ -1,5 +1,6 @@
 import unittest
 import numpy
+import numpy.random
 import numpy.testing
 import scipy
 import scipy.spatial
@@ -201,6 +202,40 @@ class Test_spherical_polygon_angle_summation(unittest.TestCase):
         self.assertLessEqual(theta,3. * math.pi,msg='theta must be less than or equal to 3 * pi radians for a spherical triangle')
         self.assertGreaterEqual(theta,math.pi,msg='theta must be greater than or equal to pi radians for a spherical triangle')
 
+class Test_voronoi_surface_area_calculations(unittest.TestCase):
+
+    def setUp(self):
+        #generate a random distribution of points on the unit sphere (http://mathworld.wolfram.com/SpherePointPicking.html)
+        #go for 1000 random points
+        self.u = numpy.random.random((1000,)) #200 points on interval [0,1); ideally want (0,1), but perhaps close enough?
+        self.v = numpy.random.random((1000,))
+        self.theta_array = 2 * math.pi * self.u
+        self.phi_array = numpy.arccos((2*self.v - 1.0))
+        self.r_array = numpy.ones((1000,))
+        self.spherical_polar_coord_array = numpy.column_stack((self.r_array,self.theta_array,self.phi_array))
+        #convert to Cartesian coordinates
+        self.cartesian_coord_array = voronoi_utility.convert_spherical_array_to_cartesian_array(self.spherical_polar_coord_array)
+
+    def tearDown(self):
+        del self.cartesian_coord_array
+        del self.spherical_polar_coord_array
+
+
+    def test_spherical_voronoi_surface_area_reconstitution(self):
+        '''Given a pseudo-random set of points on the unit sphere, the sum of the surface areas of the Voronoi polygons should be equal to the surface area of the sphere itself.'''
+        unit_sphere_surface_area = 4 * math.pi
+        random_dist_voronoi_instance = voronoi_utility.Voronoi_Sphere_Surface(self.cartesian_coord_array)
+        dictionary_sorted_Voronoi_point_coordinates_for_each_generator = random_dist_voronoi_instance.Voronoi_polygons_spherical_surface()[1]
+        sum_Voronoi_polygon_surface_areas = 0
+        for generator_index, Voronoi_polygon_sorted_vertex_array in dictionary_sorted_Voronoi_point_coordinates_for_each_generator.iteritems():
+            current_Voronoi_polygon_surface_area_on_sphere = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(Voronoi_polygon_sorted_vertex_array,1.0)
+            sum_Voronoi_polygon_surface_areas += current_Voronoi_polygon_surface_area_on_sphere
+        numpy.testing.assert_almost_equal(sum_Voronoi_polygon_surface_areas, unit_sphere_surface_area,decimal=7,err_msg='Reconstituted surface area of Voronoi polygons on unit sphere should match theoretical surface area of sphere.')
+            
+            
+        
+
+        
         
         
         

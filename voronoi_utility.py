@@ -9,6 +9,16 @@ import numpy.linalg
 import pandas
 import math
 
+def calculate_surface_area_of_a_spherical_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius):
+    '''Calculate the surface area of a polygon on the surface of a sphere. Based on equation provided here: http://mathworld.wolfram.com/SphericalPolygon.html'''
+    theta = calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius)
+    print 'theta:', theta
+    n = array_ordered_Voronoi_polygon_vertices.shape[0]
+    print 'n:', n
+    surface_area_Voronoi_polygon_on_sphere_surface = (theta - ((n - 2) * math.pi)) * (sphere_radius ** 2)
+    assert surface_area_Voronoi_polygon_on_sphere_surface > 0, "Surface areas of spherical polygons should be > 0 but got: {SA}".format(SA=surface_area_Voronoi_polygon_on_sphere_surface)
+    return surface_area_Voronoi_polygon_on_sphere_surface
+
 def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius):
     '''Takes an array of ordered Voronoi polygon vertices (for a single generator) and calculates the sum of the inner angles on the sphere surface. The resulting value is theta in the equation provided here: http://mathworld.wolfram.com/SphericalPolygon.html '''
     num_vertices_in_Voronoi_polygon = array_ordered_Voronoi_polygon_vertices.shape[0] #the number of rows == number of vertices in polygon
@@ -16,6 +26,7 @@ def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_order
     current_vertex_index = 0
     list_Voronoi_poygon_angles_radians = []
     while current_vertex_index < num_vertices_in_Voronoi_polygon:
+        print 'current_vertex_index:', current_vertex_index
         current_vertex_coordinate = array_ordered_Voronoi_polygon_vertices[current_vertex_index]
         if current_vertex_index == 0:
             previous_vertex_index = num_vertices_in_Voronoi_polygon - 1
@@ -40,6 +51,8 @@ def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_order
         vertex_coordinate = array_ordered_Voronoi_polygon_vertices[current_vertex_index]
         translated_vector_1 = first_derivative_vector[0] - vertex_coordinate
         translated_vector_2 = second_derivative_vector[0] - vertex_coordinate
+        print 'translated_vector_1:', translated_vector_1
+        print 'translated_vector_2:', translated_vector_2
 
         tangent_vector_dot_product = numpy.dot(translated_vector_1,translated_vector_2)
         current_vertex_inner_angle_on_sphere_surface = math.acos(tangent_vector_dot_product) #angle in radians
