@@ -12,11 +12,12 @@ import math
 def calculate_surface_area_of_a_spherical_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius):
     '''Calculate the surface area of a polygon on the surface of a sphere. Based on equation provided here: http://mathworld.wolfram.com/SphericalPolygon.html'''
     theta = calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius)
-    print 'theta:', theta
+    #print 'theta:', theta
     n = array_ordered_Voronoi_polygon_vertices.shape[0]
-    print 'n:', n
+    #print 'n:', n
     surface_area_Voronoi_polygon_on_sphere_surface = (theta - ((n - 2) * math.pi)) * (sphere_radius ** 2)
     assert surface_area_Voronoi_polygon_on_sphere_surface > 0, "Surface areas of spherical polygons should be > 0 but got: {SA}".format(SA=surface_area_Voronoi_polygon_on_sphere_surface)
+    #print 'surface_area_Voronoi_polygon_on_sphere_surface:', surface_area_Voronoi_polygon_on_sphere_surface
     return surface_area_Voronoi_polygon_on_sphere_surface
 
 def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius):
@@ -26,7 +27,8 @@ def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_order
     current_vertex_index = 0
     list_Voronoi_poygon_angles_radians = []
     while current_vertex_index < num_vertices_in_Voronoi_polygon:
-        print 'current_vertex_index:', current_vertex_index
+        #print '-------------'
+        #print 'current_vertex_index:', current_vertex_index
         current_vertex_coordinate = array_ordered_Voronoi_polygon_vertices[current_vertex_index]
         if current_vertex_index == 0:
             previous_vertex_index = num_vertices_in_Voronoi_polygon - 1
@@ -36,54 +38,29 @@ def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_order
             next_vertex_index = 0
         else:
             next_vertex_index = current_vertex_index + 1
-        first_edge_coordinates = numpy.zeros((2,3))
-        second_edge_coordinates = numpy.zeros((2,3))
-        first_edge_coordinates[0] = array_ordered_Voronoi_polygon_vertices[previous_vertex_index]
-        first_edge_coordinates[1] = array_ordered_Voronoi_polygon_vertices[current_vertex_index] #always end at the vertex you want to calculate angle at because of the way my derivative code works
-        second_edge_coordinates[0] = array_ordered_Voronoi_polygon_vertices[next_vertex_index]
-        second_edge_coordinates[1] = array_ordered_Voronoi_polygon_vertices[current_vertex_index] #always end at the vertex you want to calculate angle at because of the way my derivative code works
+        #try using the law of cosines to produce the angle at the current vertex (basically using a subtriangle, which is a common strategy anyway)
+        current_vertex = array_ordered_Voronoi_polygon_vertices[current_vertex_index] 
+        previous_vertex = array_ordered_Voronoi_polygon_vertices[previous_vertex_index]
+        next_vertex = array_ordered_Voronoi_polygon_vertices[next_vertex_index] 
+        #produce a,b,c for law of cosines using spherical distance (http://mathworld.wolfram.com/SphericalDistance.html)
+        a = math.acos(numpy.dot(current_vertex,next_vertex))
+        b = math.acos(numpy.dot(next_vertex,previous_vertex))
+        c = math.acos(numpy.dot(previous_vertex,current_vertex))
+        current_vertex_inner_angle_on_sphere_surface = math.acos(math.cos(b) - math.cos(a)*math.cos(c) / (math.sin(a)*math.sin(c)))
 
-        
-
-        first_derivative_vector = calculate_derivative_great_circle_arc_specified_point(first_edge_coordinates,sphere_radius) 
-        second_derivative_vector = calculate_derivative_great_circle_arc_specified_point(second_edge_coordinates,sphere_radius) 
-        #now, move the vertex point to the origin so the vectors are origin-based prior to dot product / angle calculation
-        vertex_coordinate = array_ordered_Voronoi_polygon_vertices[current_vertex_index]
-        translated_vector_1 = first_derivative_vector[0] - vertex_coordinate
-        translated_vector_2 = second_derivative_vector[0] - vertex_coordinate
-        print 'translated_vector_1:', translated_vector_1
-        print 'translated_vector_2:', translated_vector_2
-
-        tangent_vector_dot_product = numpy.dot(translated_vector_1,translated_vector_2)
-        current_vertex_inner_angle_on_sphere_surface = math.acos(tangent_vector_dot_product) #angle in radians
         list_Voronoi_poygon_angles_radians.append(current_vertex_inner_angle_on_sphere_surface)
 
         current_vertex_index += 1
 
     theta = numpy.sum(numpy.array(list_Voronoi_poygon_angles_radians))
 
-    return theta #in radians at the moment
+    return theta 
 
 def calculate_derivative_great_circle_arc_specified_point(edge_coordinates, sphere_radius):
     '''Inspired loosely by http://glowingpython.blogspot.co.uk/2013/02/visualizing-tangent.html
         Basic idea is to calculate the derivative of the great circle arc (spanning over the edge_coordinates) at a specified coordinate, as this will be important in the calculation of spherical polygon surface areas. Would be convenient to return a vector for the derivative line.'''
-    derivative_estimate_vector = numpy.zeros((2,3))
-    #assuming the second edge coordinate is the vertex where we want to calculate the derivative, I think one way to get an estimate of the derivative is to calculate successive straight-line midpoint values closer and closer to that point and then convert to spherical coordinates, project upward to great circle arc, and then convert back to Cartesian to give a really small derivative estimate vector
-    derivative_vertex = edge_coordinates[1]
-    #print 'derivative_vertex:', derivative_vertex
-    #there's probably an appropriate interpolation method in scipy, but for now I'm coding a progressive interpolation with averaging toward the vertex point
-    current_midpoint = numpy.average(edge_coordinates,axis=0)
-    #print 'current_midpoint:', current_midpoint
-    num_averages = 27 #careful! the distance between the edges becomes incredibly small to the point of floating point precision if we go too high here [conversely, insufficient iterations will be a poor estimate of the tangent because we want the limit as delta x approaches 0...]
-    while num_averages > 0:
-        current_midpoint = (current_midpoint + derivative_vertex) / 2.
-        num_averages -= 1
-    #so, after some rather large number of iterations the current_midpoint should be extremely close to the derivative vertex and is ready to be projected up to the great circle arc of this edge
-    spherical_coordinate_array_current_midpoint = convert_cartesian_array_to_spherical_array(current_midpoint)
-    spherical_coordinate_array_current_midpoint = numpy.array([sphere_radius, spherical_coordinate_array_current_midpoint[1],spherical_coordinate_array_current_midpoint[2]]) #projection
-    first_coordinate_midpoint_vector = convert_spherical_array_to_cartesian_array(spherical_coordinate_array_current_midpoint)
-    derivative_estimate_vector[0,...] = first_coordinate_midpoint_vector
-    derivative_estimate_vector[1,...] = derivative_vertex
+    #now based on http://stackoverflow.com/a/1342706:
+    derivative_estimate_vector = numpy.cross(edge_coordinates[1],numpy.cross(edge_coordinates[0],edge_coordinates[1]))
     return derivative_estimate_vector #when calculating the angle between these in another function, would probably want to translate the derivative vertex to the origin
 
 def convert_cartesian_array_to_spherical_array(coord_array,angle_measure='radians'):
