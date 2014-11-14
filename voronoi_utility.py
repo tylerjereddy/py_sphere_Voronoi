@@ -46,7 +46,7 @@ def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_order
         a = math.acos(numpy.dot(current_vertex,next_vertex))
         b = math.acos(numpy.dot(next_vertex,previous_vertex))
         c = math.acos(numpy.dot(previous_vertex,current_vertex))
-        current_vertex_inner_angle_on_sphere_surface = math.acos(math.cos(b) - math.cos(a)*math.cos(c) / (math.sin(a)*math.sin(c)))
+        current_vertex_inner_angle_on_sphere_surface = math.acos((math.cos(b) - math.cos(a)*math.cos(c)) / (math.sin(a)*math.sin(c)))
 
         list_Voronoi_poygon_angles_radians.append(current_vertex_inner_angle_on_sphere_surface)
 
