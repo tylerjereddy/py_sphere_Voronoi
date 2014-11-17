@@ -1,5 +1,6 @@
 import unittest
 import numpy
+import numpy.linalg
 import numpy.random
 import numpy.testing
 import scipy
@@ -224,6 +225,7 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         self.cartesian_coord_array = voronoi_utility.convert_spherical_array_to_cartesian_array(self.spherical_polar_coord_array)
 
         self.spherical_triangle_coordinate_array = numpy.array([[0,0,1],[0,1,0],[1,0,0]]) #3 points on a unit sphere
+        self.spherical_polygon_4_vertices_coord_array = numpy.array([[0,0,1],[0,1,0],[1,0,0],[0,-1,0]]) #4 points on a unit sphere
 
     def tearDown(self):
         del self.cartesian_coord_array
@@ -238,6 +240,11 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         dictionary_sorted_Voronoi_point_coordinates_for_each_generator = random_dist_voronoi_instance.Voronoi_polygons_spherical_surface()[1]
         sum_Voronoi_polygon_surface_areas = 0
         for generator_index, Voronoi_polygon_sorted_vertex_array in dictionary_sorted_Voronoi_point_coordinates_for_each_generator.iteritems():
+            for vector in Voronoi_polygon_sorted_vertex_array:
+                norm = numpy.linalg.norm(vector)
+                self.assertGreater(norm,0.99,'Vector to polygon vertex should have length near 1.0 but got length = {norm}'.format(norm=norm))
+            print 'generator_index:', generator_index
+            print 'Voronoi_polygon_sorted_vertex_array:', Voronoi_polygon_sorted_vertex_array
             current_Voronoi_polygon_surface_area_on_sphere = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(Voronoi_polygon_sorted_vertex_array,1.0)
             sum_Voronoi_polygon_surface_areas += current_Voronoi_polygon_surface_area_on_sphere
         numpy.testing.assert_almost_equal(sum_Voronoi_polygon_surface_areas, unit_sphere_surface_area,decimal=7,err_msg='Reconstituted surface area of Voronoi polygons on unit sphere should match theoretical surface area of sphere.')
@@ -247,8 +254,19 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         #the surface area of a spherical triangle is a special case of a spherical polygon (http://mathworld.wolfram.com/SphericalTriangle.html)
         sum_spherical_triangle_inner_angles = voronoi_utility.calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(self.spherical_triangle_coordinate_array,1.0)
         spherical_excess = sum_spherical_triangle_inner_angles - math.pi #because the radius of the sphere is 1 the spherical excess is also the surface area
+        self.assertGreater(spherical_excess,0.0)
         test_surface_area = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(self.spherical_triangle_coordinate_array,1.0)
         self.assertEqual(test_surface_area,spherical_excess,msg='Surface area of a spherical triangle (a special case of spherical polygon) not calculated correctly.')
+
+    def test_spherical_polygon_4_vertices_surface_area_calculation(self):
+        '''Test spherical polygon surface area calculation on the more complex case of a spherical polygon with 4 vertices on a unit sphere.'''
+        sum_spherical_polygon_inner_angles = voronoi_utility.calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(self.spherical_polygon_4_vertices_coord_array,1.0)
+        subtraction_value = 2 * math.pi # (n-2) * pi
+        target_area = sum_spherical_polygon_inner_angles - subtraction_value
+        self.assertGreater(sum_spherical_polygon_inner_angles,subtraction_value,'The polygon with 4 vertices has a negative surface area.')
+        measured_surface_area = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(self.spherical_polygon_4_vertices_coord_array, 1.0)
+        self.assertEqual(measured_surface_area,target_area,msg='Surface area of a 4-vertex spherical polygon is not calculated correctly.')
+        
 
             
         

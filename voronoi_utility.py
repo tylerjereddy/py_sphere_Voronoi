@@ -12,9 +12,10 @@ import math
 def calculate_surface_area_of_a_spherical_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius):
     '''Calculate the surface area of a polygon on the surface of a sphere. Based on equation provided here: http://mathworld.wolfram.com/SphericalPolygon.html'''
     theta = calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius)
-    #print 'theta:', theta
+    print 'theta:', theta
     n = array_ordered_Voronoi_polygon_vertices.shape[0]
-    #print 'n:', n
+    print 'n:', n
+    print 'lower theta boundary:', (n - 2) * math.pi
     surface_area_Voronoi_polygon_on_sphere_surface = (theta - ((n - 2) * math.pi)) * (sphere_radius ** 2)
     assert surface_area_Voronoi_polygon_on_sphere_surface > 0, "Surface areas of spherical polygons should be > 0 but got: {SA}".format(SA=surface_area_Voronoi_polygon_on_sphere_surface)
     #print 'surface_area_Voronoi_polygon_on_sphere_surface:', surface_area_Voronoi_polygon_on_sphere_surface
@@ -47,6 +48,7 @@ def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_order
         b = math.acos(numpy.dot(next_vertex,previous_vertex))
         c = math.acos(numpy.dot(previous_vertex,current_vertex))
         current_vertex_inner_angle_on_sphere_surface = math.acos((math.cos(b) - math.cos(a)*math.cos(c)) / (math.sin(a)*math.sin(c)))
+        print 'current vertex inner angle (degrees):', math.degrees(current_vertex_inner_angle_on_sphere_surface)
 
         list_Voronoi_poygon_angles_radians.append(current_vertex_inner_angle_on_sphere_surface)
 
