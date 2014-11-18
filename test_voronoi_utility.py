@@ -292,6 +292,29 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         measured_surface_area = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(self.spherical_polygon_4_vertices_coord_array, 1.0)
         self.assertEqual(measured_surface_area,target_area,msg='Surface area of a 4-vertex spherical polygon is not calculated correctly.')
         
+    def test_spherical_polygon_4_vertices_nearly_colinear_surface_area_calculation(self):
+        '''Test spherical polygon surface area calculation for a polygon with 4 vertices AND an internal angle that is very close to 180 degrees. Trying to stress test / probe possible issues with arc cosine accuracy, etc.'''
+        regular_spherical_triangle_coords = self.spherical_triangle_coordinate_array #([[0,0,1],[0,1,0],[1,0,0]]) #3 points on a unit sphere
+        #I want to generate a fourth point that is ALMOST on the same great circle arc as two other vertices, because this is a nasty test case
+        linear_midpoint_last_two_vertices = (regular_spherical_triangle_coords[1] + regular_spherical_triangle_coords[2]) / 2.0
+        linear_midpoint_spherical_polar_coords = voronoi_utility.convert_cartesian_array_to_spherical_array(linear_midpoint_last_two_vertices)
+        spherical_midpoint_spherical_polar_coords = numpy.zeros((1,3))
+        spherical_midpoint_spherical_polar_coords[0,0] = 1.0
+        spherical_midpoint_spherical_polar_coords[0,1] = linear_midpoint_spherical_polar_coords[1] + 0.000001 #slightly off the arc
+        spherical_midpoint_spherical_polar_coords[0,2] = linear_midpoint_spherical_polar_coords[2] + 0.000001 #slightly off the arc
+        near_midpoint_cartesian = voronoi_utility.convert_spherical_array_to_cartesian_array(spherical_midpoint_spherical_polar_coords)
+        polygon_coords = numpy.zeros((4,3))
+        polygon_coords[0] = regular_spherical_triangle_coords[0]
+        polygon_coords[1] = regular_spherical_triangle_coords[1]
+        polygon_coords[2] = near_midpoint_cartesian[0,...]
+        polygon_coords[3] = regular_spherical_triangle_coords[2]
+        measured_surface_area = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(polygon_coords,1.0) #the function itself will pass an exception if there is a negative surface area
+        self.assertGreater(measured_surface_area,0.0)
+
+
+
+
+
 
             
         
