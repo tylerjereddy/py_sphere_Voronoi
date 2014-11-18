@@ -331,12 +331,11 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         self.assertGreater(measured_surface_area,0.0)
 
     def test_problematic_spherical_polygon_surface_area(self):
-        '''Test the surface area of a spherical polygon that I know has previously caused issues with negative surface area as part of a Voronoi diagram.'''
+        '''Test the surface area of a spherical polygon that I know has previously caused issues with negative surface area as part of a Voronoi diagram. Now using a simplified version of that polygon with 1 less vertex--but still get a negative result.'''
         problematic_polygon_array = numpy.array([[-0.12278101, 0.38828208, 0.90397089],
          [-0.18533492 ,0.28384049, 0.9317119 ],
          [ 0.07210294 ,0.29806975, 0.94284522],
-         [ 0.1316095  ,0.32464041, 0.92751769],
-         [ 0.08298007 ,0.36485282 ,0.91814936]])
+         [ 0.1316095  ,0.32464041, 0.92751769]])
         measured_surface_area = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(problematic_polygon_array,1.0)
         self.assertGreater(measured_surface_area,0.0)
 
