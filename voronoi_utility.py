@@ -9,6 +9,56 @@ import numpy.linalg
 import pandas
 import math
 
+def estimate_surface_area_spherical_polygon_JPL(array_ordered_Voronoi_polygon_vertices,sphere_radius):
+    '''Estimate the area of a spherical polygon using the method proposed in a JPL documnet: http://trs-new.jpl.nasa.gov/dspace/bitstream/2014/41271/1/07-0286.pdf
+    My attempts at implementing the exact solution for spherical polygon surface area have been very problematic so I'm trying this instead.
+    I think this may only apply to polygons that do not contain either pole of the sphere.'''
+    current_vertex_index = 0
+    surface_area_spherical_polygon = 0
+    num_vertices_in_Voronoi_polygon = array_ordered_Voronoi_polygon_vertices.shape[0] #the number of rows == number of vertices in polygon
+    while current_vertex_index < num_vertices_in_Voronoi_polygon:
+        #print '-------------'
+        #print 'current_vertex_index:', current_vertex_index
+        if current_vertex_index == 0:
+            previous_vertex_index = num_vertices_in_Voronoi_polygon - 1
+        else:
+            previous_vertex_index = current_vertex_index - 1
+        if current_vertex_index == num_vertices_in_Voronoi_polygon - 1:
+            next_vertex_index = 0
+        else:
+            next_vertex_index = current_vertex_index + 1
+
+        print 'previous_vertex_index:', previous_vertex_index
+        print 'current_vertex_index:', current_vertex_index
+        print 'next_vertex_index:', next_vertex_index
+
+        previous_vertex_coordinate = array_ordered_Voronoi_polygon_vertices[previous_vertex_index]
+        current_vertex_coordinate = array_ordered_Voronoi_polygon_vertices[current_vertex_index]
+        next_vertex_coordinate = array_ordered_Voronoi_polygon_vertices[next_vertex_index]
+
+        previous_vertex_spherical_polar_coordinates = convert_cartesian_array_to_spherical_array(previous_vertex_coordinate)
+        current_vertex_spherical_polar_coordinates = convert_cartesian_array_to_spherical_array(current_vertex_coordinate)
+        next_vertex_spherical_polar_coordinates = convert_cartesian_array_to_spherical_array(next_vertex_coordinate)
+        
+        next_vertex_theta = next_vertex_spherical_polar_coordinates[1]
+        next_vertex_phi = next_vertex_spherical_polar_coordinates[2]
+        current_vertex_theta = current_vertex_spherical_polar_coordinates[1]
+        current_vertex_phi = current_vertex_spherical_polar_coordinates[2]
+        previous_vertex_theta = previous_vertex_spherical_polar_coordinates[1]
+        previous_vertex_phi = previous_vertex_spherical_polar_coordinates[2]
+        
+        #looks like my phi == their phi; my theta == their lambda
+        edge_contribution_to_surface_area_of_polygon = (next_vertex_theta - previous_vertex_theta) * math.sin(current_vertex_phi)
+        print 'edge_contribution_to_surface_area_of_polygon:', edge_contribution_to_surface_area_of_polygon
+
+        surface_area_spherical_polygon += edge_contribution_to_surface_area_of_polygon
+
+        current_vertex_index += 1
+
+    surface_area_spherical_polygon = surface_area_spherical_polygon * (-(sphere_radius**2) / 2.)
+    assert surface_area_spherical_polygon > 0, "Surface areas of spherical polygons should be > 0 but got: {SA}".format(SA=surface_area_spherical_polygon)
+    return surface_area_spherical_polygon
+
 def calculate_surface_area_of_a_spherical_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius):
     '''Calculate the surface area of a polygon on the surface of a sphere. Based on equation provided here: http://mathworld.wolfram.com/SphericalPolygon.html'''
     theta = calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius)
@@ -43,10 +93,17 @@ def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_order
         current_vertex = array_ordered_Voronoi_polygon_vertices[current_vertex_index] 
         previous_vertex = array_ordered_Voronoi_polygon_vertices[previous_vertex_index]
         next_vertex = array_ordered_Voronoi_polygon_vertices[next_vertex_index] 
+        print 'subtriangle vertex coords:', previous_vertex,current_vertex,next_vertex
         #produce a,b,c for law of cosines using spherical distance (http://mathworld.wolfram.com/SphericalDistance.html)
         a = math.acos(numpy.dot(current_vertex,next_vertex))
         b = math.acos(numpy.dot(next_vertex,previous_vertex))
         c = math.acos(numpy.dot(previous_vertex,current_vertex))
+        print 'a,b,c side lengths on subtriangle:', a, b, c
+        #try outputting straight-line Euclidean distances for debugging comparison, as I think there are some suspect edge lengths coming out from this
+        a_euclid = scipy.spatial.distance.euclidean(current_vertex,next_vertex)
+        b_euclid = scipy.spatial.distance.euclidean(next_vertex,previous_vertex)
+        c_euclid = scipy.spatial.distance.euclidean(previous_vertex,current_vertex)
+        print 'Euclidean edge lengths (debug):', a_euclid,b_euclid,c_euclid
         current_vertex_inner_angle_on_sphere_surface = math.acos((math.cos(b) - math.cos(a)*math.cos(c)) / (math.sin(a)*math.sin(c)))
         print 'current vertex inner angle (degrees):', math.degrees(current_vertex_inner_angle_on_sphere_surface)
 

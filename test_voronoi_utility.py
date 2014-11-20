@@ -254,7 +254,7 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
                 self.assertGreater(norm,0.99,'Vector to polygon vertex should have length near 1.0 but got length = {norm}'.format(norm=norm))
             print 'generator_index:', generator_index
             print 'Voronoi_polygon_sorted_vertex_array:', Voronoi_polygon_sorted_vertex_array
-            current_Voronoi_polygon_surface_area_on_sphere = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(Voronoi_polygon_sorted_vertex_array,1.0)
+            current_Voronoi_polygon_surface_area_on_sphere = voronoi_utility.estimate_surface_area_spherical_polygon_JPL(Voronoi_polygon_sorted_vertex_array,1.0)
             sum_Voronoi_polygon_surface_areas += current_Voronoi_polygon_surface_area_on_sphere
         numpy.testing.assert_almost_equal(sum_Voronoi_polygon_surface_areas, unit_sphere_surface_area,decimal=7,err_msg='Reconstituted surface area of Voronoi polygons on unit sphere should match theoretical surface area of sphere.')
 
@@ -270,7 +270,7 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
                 self.assertGreater(norm,0.99,'Vector to polygon vertex should have length near 1.0 but got length = {norm}'.format(norm=norm))
             print 'generator_index:', generator_index
             print 'Voronoi_polygon_sorted_vertex_array:', Voronoi_polygon_sorted_vertex_array
-            current_Voronoi_polygon_surface_area_on_sphere = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(Voronoi_polygon_sorted_vertex_array,1.0)
+            current_Voronoi_polygon_surface_area_on_sphere = voronoi_utility.estimate_surface_area_spherical_polygon_JPL(Voronoi_polygon_sorted_vertex_array,1.0)
             sum_Voronoi_polygon_surface_areas += current_Voronoi_polygon_surface_area_on_sphere
         numpy.testing.assert_almost_equal(sum_Voronoi_polygon_surface_areas, unit_sphere_surface_area,decimal=7,err_msg='Reconstituted surface area of Voronoi polygons on unit sphere should match theoretical surface area of sphere.')
             
@@ -336,7 +336,7 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
          [-0.18533492 ,0.28384049, 0.9317119 ],
          [ 0.07210294 ,0.29806975, 0.94284522],
          [ 0.1316095  ,0.32464041, 0.92751769]])
-        measured_surface_area = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(problematic_polygon_array,1.0)
+        measured_surface_area = voronoi_utility.estimate_surface_area_spherical_polygon_JPL(problematic_polygon_array,1.0)
         self.assertGreater(measured_surface_area,0.0)
 
 
