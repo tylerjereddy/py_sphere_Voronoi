@@ -245,7 +245,16 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         input_sphere_coordinate_array[...,0] = x.ravel()
         input_sphere_coordinate_array[...,1] = y.ravel()
         input_sphere_coordinate_array[...,2] = z.ravel()
-        voronoi_instance = voronoi_utility.Voronoi_Sphere_Surface(input_sphere_coordinate_array)
+        #filter generators for extreme proximity
+        generator_distance_matrix = scipy.spatial.distance.cdist(input_sphere_coordinate_array,input_sphere_coordinate_array,'euclidean')
+        violating_row_indices, violating_column_indices = numpy.where((generator_distance_matrix < 0.0001) & (generator_distance_matrix != 0.0)) #avoid self, distances less than 1/10 000th of radius
+        filtered_array = input_sphere_coordinate_array
+        list_columns_account_for = []
+        for column in violating_column_indices:
+            if not column in list_columns_account_for:
+                filtered_array = numpy.delete(filtered_array,column,0)
+                list_columns_account_for.append(column)
+        voronoi_instance = voronoi_utility.Voronoi_Sphere_Surface(filtered_array)
         dictionary_sorted_Voronoi_point_coordinates_for_each_generator = voronoi_instance.Voronoi_polygons_spherical_surface()[1]
         sum_Voronoi_polygon_surface_areas = 0
         for generator_index, Voronoi_polygon_sorted_vertex_array in dictionary_sorted_Voronoi_point_coordinates_for_each_generator.iteritems():
@@ -261,7 +270,16 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
     def test_spherical_voronoi_surface_area_reconstitution(self):
         '''Given a pseudo-random set of points on the unit sphere, the sum of the surface areas of the Voronoi polygons should be equal to the surface area of the sphere itself.'''
         unit_sphere_surface_area = 4 * math.pi
-        random_dist_voronoi_instance = voronoi_utility.Voronoi_Sphere_Surface(self.cartesian_coord_array)
+        #filter generators for extreme proximity
+        generator_distance_matrix = scipy.spatial.distance.cdist(self.cartesian_coord_array,self.cartesian_coord_array,'euclidean')
+        violating_row_indices, violating_column_indices = numpy.where((generator_distance_matrix < 0.0001) & (generator_distance_matrix != 0.0)) #avoid self, distances less than 1/10 000th of radius
+        filtered_array = self.cartesian_coord_array
+        list_columns_account_for = []
+        for column in violating_column_indices:
+            if not column in list_columns_account_for:
+                filtered_array = numpy.delete(filtered_array,column,0)
+                list_columns_account_for.append(column)
+        random_dist_voronoi_instance = voronoi_utility.Voronoi_Sphere_Surface(filtered_array)
         dictionary_sorted_Voronoi_point_coordinates_for_each_generator = random_dist_voronoi_instance.Voronoi_polygons_spherical_surface()[1]
         sum_Voronoi_polygon_surface_areas = 0
         for generator_index, Voronoi_polygon_sorted_vertex_array in dictionary_sorted_Voronoi_point_coordinates_for_each_generator.iteritems():

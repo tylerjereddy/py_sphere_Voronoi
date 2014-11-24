@@ -63,6 +63,30 @@ def estimate_surface_area_spherical_polygon_JPL(array_ordered_Voronoi_polygon_ve
     assert surface_area_spherical_polygon > 0, "Surface areas of spherical polygons should be > 0 but got: {SA}".format(SA=surface_area_spherical_polygon)
     return surface_area_spherical_polygon
 
+def filter_polygon_vertex_coordinates_for_extreme_proximity(array_ordered_Voronoi_polygon_vertices,sphere_radius):
+    '''Merge (take the midpoint of) polygon vertices that are judged to be extremely close together and return the filtered polygon vertex array. The purpose is to alleviate numerical complications that may arise during surface area calculations involving polygons with ultra-close / nearly coplanar vertices.'''
+    while 1:
+        distance_matrix = scipy.spatial.distance.cdist(array_ordered_Voronoi_polygon_vertices,array_ordered_Voronoi_polygon_vertices,'euclidean')
+        maximum_euclidean_distance_between_any_vertices = numpy.amax(distance_matrix)
+        vertex_merge_threshold = 0.02 #merge any vertices that are separated by less than 1% of the longest inter-vertex distance (may have to play with this value a bit)
+        threshold_assessment_matrix = distance_matrix / maximum_euclidean_distance_between_any_vertices
+        row_indices_that_violate_threshold, column_indices_that_violate_threshold = numpy.where((threshold_assessment_matrix < vertex_merge_threshold) & (threshold_assessment_matrix > 0))
+        if len(row_indices_that_violate_threshold) > 0 and len(column_indices_that_violate_threshold) > 0:
+            for row, column in zip(row_indices_that_violate_threshold,column_indices_that_violate_threshold):
+                if not row==column: #ignore diagonal values
+                    first_violating_vertex_index = row
+                    associated_vertex_index = column
+                    new_vertex_at_midpoint = ( array_ordered_Voronoi_polygon_vertices[row] + array_ordered_Voronoi_polygon_vertices[column] ) / 2.0
+                    spherical_polar_coords_new_vertex = convert_cartesian_array_to_spherical_array(new_vertex_at_midpoint)
+                    spherical_polar_coords_new_vertex[0] = 1.0 #project back to surface of sphere
+                    new_vertex_at_midpoint = convert_spherical_array_to_cartesian_array(spherical_polar_coords_new_vertex)
+                    array_ordered_Voronoi_polygon_vertices[row] = new_vertex_at_midpoint
+                    array_ordered_Voronoi_polygon_vertices = numpy.delete(array_ordered_Voronoi_polygon_vertices,column,0)
+                    break 
+        else: break #no more violating vertices
+    return array_ordered_Voronoi_polygon_vertices
+
+
 def calculate_surface_area_of_planar_polygon_in_3D_space(array_ordered_Voronoi_polygon_vertices):
     '''Based largely on: http://stackoverflow.com/a/12653810
     Use this function when spherical polygon surface area calculation fails (i.e., lots of nearly-coplanar vertices and negative surface area).'''
@@ -104,6 +128,7 @@ def calculate_surface_area_of_planar_polygon_in_3D_space(array_ordered_Voronoi_p
 
 def calculate_surface_area_of_a_spherical_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius):
     '''Calculate the surface area of a polygon on the surface of a sphere. Based on equation provided here: http://mathworld.wolfram.com/SphericalPolygon.html'''
+    array_ordered_Voronoi_polygon_vertices = filter_polygon_vertex_coordinates_for_extreme_proximity(array_ordered_Voronoi_polygon_vertices,sphere_radius) #filter vertices for extreme proximity
     theta = calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius)
     n = array_ordered_Voronoi_polygon_vertices.shape[0]
     surface_area_Voronoi_polygon_on_sphere_surface = (theta - ((n - 2) * math.pi)) * (sphere_radius ** 2)
