@@ -254,7 +254,7 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
                 self.assertGreater(norm,0.99,'Vector to polygon vertex should have length near 1.0 but got length = {norm}'.format(norm=norm))
             print 'generator_index:', generator_index
             print 'Voronoi_polygon_sorted_vertex_array:', Voronoi_polygon_sorted_vertex_array
-            current_Voronoi_polygon_surface_area_on_sphere = voronoi_utility.estimate_surface_area_spherical_polygon_JPL(Voronoi_polygon_sorted_vertex_array,1.0)
+            current_Voronoi_polygon_surface_area_on_sphere = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(Voronoi_polygon_sorted_vertex_array,1.0)
             sum_Voronoi_polygon_surface_areas += current_Voronoi_polygon_surface_area_on_sphere
         numpy.testing.assert_almost_equal(sum_Voronoi_polygon_surface_areas, unit_sphere_surface_area,decimal=7,err_msg='Reconstituted surface area of Voronoi polygons on unit sphere should match theoretical surface area of sphere.')
 
@@ -270,7 +270,7 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
                 self.assertGreater(norm,0.99,'Vector to polygon vertex should have length near 1.0 but got length = {norm}'.format(norm=norm))
             print 'generator_index:', generator_index
             print 'Voronoi_polygon_sorted_vertex_array:', Voronoi_polygon_sorted_vertex_array
-            current_Voronoi_polygon_surface_area_on_sphere = voronoi_utility.estimate_surface_area_spherical_polygon_JPL(Voronoi_polygon_sorted_vertex_array,1.0)
+            current_Voronoi_polygon_surface_area_on_sphere = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(Voronoi_polygon_sorted_vertex_array,1.0)
             sum_Voronoi_polygon_surface_areas += current_Voronoi_polygon_surface_area_on_sphere
         numpy.testing.assert_almost_equal(sum_Voronoi_polygon_surface_areas, unit_sphere_surface_area,decimal=7,err_msg='Reconstituted surface area of Voronoi polygons on unit sphere should match theoretical surface area of sphere.')
             
@@ -288,6 +288,7 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         sum_spherical_polygon_inner_angles = voronoi_utility.calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(self.spherical_polygon_4_vertices_coord_array,1.0)
         subtraction_value = 2 * math.pi # (n-2) * pi
         target_area = sum_spherical_polygon_inner_angles - subtraction_value
+        print 'target_area (should be pi):', target_area 
         self.assertGreater(sum_spherical_polygon_inner_angles,subtraction_value,'The polygon with 4 vertices has a negative surface area.')
         measured_surface_area = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(self.spherical_polygon_4_vertices_coord_array, 1.0)
         self.assertEqual(measured_surface_area,target_area,msg='Surface area of a 4-vertex spherical polygon is not calculated correctly.')
@@ -336,9 +337,15 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
          [-0.18533492 ,0.28384049, 0.9317119 ],
          [ 0.07210294 ,0.29806975, 0.94284522],
          [ 0.1316095  ,0.32464041, 0.92751769]])
-        measured_surface_area = voronoi_utility.estimate_surface_area_spherical_polygon_JPL(problematic_polygon_array,1.0)
+        measured_surface_area = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(problematic_polygon_array,1.0)
         self.assertGreater(measured_surface_area,0.0)
 
+    def test_planar_polygon_surface_area(self):
+        '''Test the surface area calculation for a planar polygon in 3D Cartesian space using a simple shape.'''
+        planar_polygon_vertex_array = numpy.array([[0,0,0],[math.sqrt(21),0,2],[math.sqrt(21),-1,2],[0,-1,0]]) #a tilted rectangle
+        theoretical_surface_area = 5.0 #rectangle of length 5 and width 1
+        test_surface_area = voronoi_utility.calculate_surface_area_of_planar_polygon_in_3D_space(planar_polygon_vertex_array)
+        self.assertEqual(test_surface_area,theoretical_surface_area)
 
 
 

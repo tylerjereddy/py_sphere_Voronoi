@@ -48,7 +48,11 @@ def estimate_surface_area_spherical_polygon_JPL(array_ordered_Voronoi_polygon_ve
         previous_vertex_phi = previous_vertex_spherical_polar_coordinates[2]
         
         #looks like my phi == their phi; my theta == their lambda
-        edge_contribution_to_surface_area_of_polygon = (next_vertex_theta - previous_vertex_theta) * math.sin(current_vertex_phi)
+        delta_lambda = (next_vertex_theta - previous_vertex_theta)
+        sine_value = math.sin(current_vertex_phi)
+        print 'delta_lambda:', delta_lambda
+        print 'sine_value:', sine_value
+        edge_contribution_to_surface_area_of_polygon =  delta_lambda * sine_value
         print 'edge_contribution_to_surface_area_of_polygon:', edge_contribution_to_surface_area_of_polygon
 
         surface_area_spherical_polygon += edge_contribution_to_surface_area_of_polygon
@@ -58,6 +62,45 @@ def estimate_surface_area_spherical_polygon_JPL(array_ordered_Voronoi_polygon_ve
     surface_area_spherical_polygon = surface_area_spherical_polygon * (-(sphere_radius**2) / 2.)
     assert surface_area_spherical_polygon > 0, "Surface areas of spherical polygons should be > 0 but got: {SA}".format(SA=surface_area_spherical_polygon)
     return surface_area_spherical_polygon
+
+def calculate_surface_area_of_planar_polygon_in_3D_space(array_ordered_Voronoi_polygon_vertices):
+    '''Based largely on: http://stackoverflow.com/a/12653810
+    Use this function when spherical polygon surface area calculation fails (i.e., lots of nearly-coplanar vertices and negative surface area).'''
+    #unit normal vector of plane defined by points a, b, and c
+    def unit_normal(a, b, c):
+        x = numpy.linalg.det([[1,a[1],a[2]],
+             [1,b[1],b[2]],
+             [1,c[1],c[2]]])
+        y = numpy.linalg.det([[a[0],1,a[2]],
+             [b[0],1,b[2]],
+             [c[0],1,c[2]]])
+        z = numpy.linalg.det([[a[0],a[1],1],
+             [b[0],b[1],1],
+             [c[0],c[1],1]])
+        magnitude = (x**2 + y**2 + z**2)**.5
+        return (x/magnitude, y/magnitude, z/magnitude)
+
+    #area of polygon poly
+    def poly_area(poly):
+        '''Accepts a list of xyz tuples.'''
+        assert len(poly) >= 3, "Not a polygon (< 3 vertices)."
+        total = [0, 0, 0]
+        N = len(poly)
+        for i in range(N):
+            vi1 = poly[i]
+            vi2 = poly[(i+1) % N]
+            prod = numpy.cross(vi1, vi2)
+            total[0] += prod[0]
+            total[1] += prod[1]
+            total[2] += prod[2]
+        result = numpy.dot(total, unit_normal(poly[0], poly[1], poly[2]))
+        return abs(result/2)
+
+    list_vertices = [] #need a list of tuples for above function
+    for coord in array_ordered_Voronoi_polygon_vertices:
+        list_vertices.append(tuple(coord))
+    planar_polygon_surface_area = poly_area(list_vertices)
+    return planar_polygon_surface_area
 
 def calculate_surface_area_of_a_spherical_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius):
     '''Calculate the surface area of a polygon on the surface of a sphere. Based on equation provided here: http://mathworld.wolfram.com/SphericalPolygon.html'''
@@ -93,19 +136,19 @@ def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_order
         current_vertex = array_ordered_Voronoi_polygon_vertices[current_vertex_index] 
         previous_vertex = array_ordered_Voronoi_polygon_vertices[previous_vertex_index]
         next_vertex = array_ordered_Voronoi_polygon_vertices[next_vertex_index] 
-        print 'subtriangle vertex coords:', previous_vertex,current_vertex,next_vertex
+        #print 'subtriangle vertex coords:', previous_vertex,current_vertex,next_vertex
         #produce a,b,c for law of cosines using spherical distance (http://mathworld.wolfram.com/SphericalDistance.html)
         a = math.acos(numpy.dot(current_vertex,next_vertex))
         b = math.acos(numpy.dot(next_vertex,previous_vertex))
         c = math.acos(numpy.dot(previous_vertex,current_vertex))
-        print 'a,b,c side lengths on subtriangle:', a, b, c
+        #print 'a,b,c side lengths on subtriangle:', a, b, c
         #try outputting straight-line Euclidean distances for debugging comparison, as I think there are some suspect edge lengths coming out from this
         a_euclid = scipy.spatial.distance.euclidean(current_vertex,next_vertex)
         b_euclid = scipy.spatial.distance.euclidean(next_vertex,previous_vertex)
         c_euclid = scipy.spatial.distance.euclidean(previous_vertex,current_vertex)
-        print 'Euclidean edge lengths (debug):', a_euclid,b_euclid,c_euclid
+        #print 'Euclidean edge lengths (debug):', a_euclid,b_euclid,c_euclid
         current_vertex_inner_angle_on_sphere_surface = math.acos((math.cos(b) - math.cos(a)*math.cos(c)) / (math.sin(a)*math.sin(c)))
-        print 'current vertex inner angle (degrees):', math.degrees(current_vertex_inner_angle_on_sphere_surface)
+        #print 'current vertex inner angle (degrees):', math.degrees(current_vertex_inner_angle_on_sphere_surface)
 
         list_Voronoi_poygon_angles_radians.append(current_vertex_inner_angle_on_sphere_surface)
 
