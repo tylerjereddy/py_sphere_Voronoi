@@ -252,8 +252,8 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
             for vector in Voronoi_polygon_sorted_vertex_array:
                 norm = numpy.linalg.norm(vector)
                 self.assertGreater(norm,0.99,'Vector to polygon vertex should have length near 1.0 but got length = {norm}'.format(norm=norm))
-            print 'generator_index:', generator_index
-            print 'Voronoi_polygon_sorted_vertex_array:', Voronoi_polygon_sorted_vertex_array
+            #print 'generator_index:', generator_index
+            #print 'Voronoi_polygon_sorted_vertex_array:', Voronoi_polygon_sorted_vertex_array
             current_Voronoi_polygon_surface_area_on_sphere = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(Voronoi_polygon_sorted_vertex_array,1.0)
             sum_Voronoi_polygon_surface_areas += current_Voronoi_polygon_surface_area_on_sphere
         numpy.testing.assert_almost_equal(sum_Voronoi_polygon_surface_areas, unit_sphere_surface_area,decimal=7,err_msg='Reconstituted surface area of Voronoi polygons on unit sphere should match theoretical surface area of sphere.')
@@ -268,8 +268,8 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
             for vector in Voronoi_polygon_sorted_vertex_array:
                 norm = numpy.linalg.norm(vector)
                 self.assertGreater(norm,0.99,'Vector to polygon vertex should have length near 1.0 but got length = {norm}'.format(norm=norm))
-            print 'generator_index:', generator_index
-            print 'Voronoi_polygon_sorted_vertex_array:', Voronoi_polygon_sorted_vertex_array
+            #print 'generator_index:', generator_index
+            #print 'Voronoi_polygon_sorted_vertex_array:', Voronoi_polygon_sorted_vertex_array
             current_Voronoi_polygon_surface_area_on_sphere = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(Voronoi_polygon_sorted_vertex_array,1.0)
             sum_Voronoi_polygon_surface_areas += current_Voronoi_polygon_surface_area_on_sphere
         numpy.testing.assert_almost_equal(sum_Voronoi_polygon_surface_areas, unit_sphere_surface_area,decimal=7,err_msg='Reconstituted surface area of Voronoi polygons on unit sphere should match theoretical surface area of sphere.')
@@ -288,7 +288,7 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         sum_spherical_polygon_inner_angles = voronoi_utility.calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(self.spherical_polygon_4_vertices_coord_array,1.0)
         subtraction_value = 2 * math.pi # (n-2) * pi
         target_area = sum_spherical_polygon_inner_angles - subtraction_value
-        print 'target_area (should be pi):', target_area 
+        #print 'target_area (should be pi):', target_area 
         self.assertGreater(sum_spherical_polygon_inner_angles,subtraction_value,'The polygon with 4 vertices has a negative surface area.')
         measured_surface_area = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(self.spherical_polygon_4_vertices_coord_array, 1.0)
         self.assertEqual(measured_surface_area,target_area,msg='Surface area of a 4-vertex spherical polygon is not calculated correctly.')

@@ -105,13 +105,10 @@ def calculate_surface_area_of_planar_polygon_in_3D_space(array_ordered_Voronoi_p
 def calculate_surface_area_of_a_spherical_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius):
     '''Calculate the surface area of a polygon on the surface of a sphere. Based on equation provided here: http://mathworld.wolfram.com/SphericalPolygon.html'''
     theta = calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius)
-    print 'theta:', theta
     n = array_ordered_Voronoi_polygon_vertices.shape[0]
-    print 'n:', n
-    print 'lower theta boundary:', (n - 2) * math.pi
     surface_area_Voronoi_polygon_on_sphere_surface = (theta - ((n - 2) * math.pi)) * (sphere_radius ** 2)
-    assert surface_area_Voronoi_polygon_on_sphere_surface > 0, "Surface areas of spherical polygons should be > 0 but got: {SA}".format(SA=surface_area_Voronoi_polygon_on_sphere_surface)
-    #print 'surface_area_Voronoi_polygon_on_sphere_surface:', surface_area_Voronoi_polygon_on_sphere_surface
+    if surface_area_Voronoi_polygon_on_sphere_surface <= 0: #the spherical polygon surface area could not be calculated properly (in the limit of large numbers of vertices and when vertices that are nearly co-planar are present this seems to be a problem)
+        surface_area_Voronoi_polygon_on_sphere_surface = calculate_surface_area_of_planar_polygon_in_3D_space(array_ordered_Voronoi_polygon_vertices) #just use planar area as estimate, which may be quite appropriate with many of the failure /edge cases in any case
     return surface_area_Voronoi_polygon_on_sphere_surface
 
 def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius):
