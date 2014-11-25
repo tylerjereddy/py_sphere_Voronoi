@@ -245,17 +245,9 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         input_sphere_coordinate_array[...,0] = x.ravel()
         input_sphere_coordinate_array[...,1] = y.ravel()
         input_sphere_coordinate_array[...,2] = z.ravel()
-        voronoi_instance = voronoi_utility.Voronoi_Sphere_Surface(input_sphere_coordinate_array)
-        dictionary_sorted_Voronoi_point_coordinates_for_each_generator = voronoi_instance.Voronoi_polygons_spherical_surface()[1]
-        sum_Voronoi_polygon_surface_areas = 0
-        for generator_index, Voronoi_polygon_sorted_vertex_array in dictionary_sorted_Voronoi_point_coordinates_for_each_generator.iteritems():
-            for vector in Voronoi_polygon_sorted_vertex_array:
-                norm = numpy.linalg.norm(vector)
-                self.assertGreater(norm,0.99,'Vector to polygon vertex should have length near 1.0 but got length = {norm}'.format(norm=norm))
-            #print 'generator_index:', generator_index
-            #print 'Voronoi_polygon_sorted_vertex_array:', Voronoi_polygon_sorted_vertex_array
-            current_Voronoi_polygon_surface_area_on_sphere = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(Voronoi_polygon_sorted_vertex_array,1.0)
-            sum_Voronoi_polygon_surface_areas += current_Voronoi_polygon_surface_area_on_sphere
+        voronoi_instance = voronoi_utility.Voronoi_Sphere_Surface(input_sphere_coordinate_array,1.0)
+        dictionary_Voronoi_region_surface_areas_for_each_generator = voronoi_instance.Voronoi_polygons_spherical_surface()[2]
+        sum_Voronoi_polygon_surface_areas = sum(dictionary_Voronoi_region_surface_areas_for_each_generator.itervalues())
         numpy.testing.assert_almost_equal(sum_Voronoi_polygon_surface_areas, unit_sphere_surface_area,decimal=7,err_msg='Reconstituted surface area of Voronoi polygons on unit sphere should match theoretical surface area of sphere.')
 
     def test_spherical_voronoi_surface_area_reconstitution(self):
@@ -270,17 +262,9 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
             if not column in list_columns_account_for:
                 filtered_array = numpy.delete(filtered_array,column,0)
                 list_columns_account_for.append(column)
-        random_dist_voronoi_instance = voronoi_utility.Voronoi_Sphere_Surface(filtered_array)
-        dictionary_sorted_Voronoi_point_coordinates_for_each_generator = random_dist_voronoi_instance.Voronoi_polygons_spherical_surface()[1]
-        sum_Voronoi_polygon_surface_areas = 0
-        for generator_index, Voronoi_polygon_sorted_vertex_array in dictionary_sorted_Voronoi_point_coordinates_for_each_generator.iteritems():
-            for vector in Voronoi_polygon_sorted_vertex_array:
-                norm = numpy.linalg.norm(vector)
-                self.assertGreater(norm,0.99,'Vector to polygon vertex should have length near 1.0 but got length = {norm}'.format(norm=norm))
-            #print 'generator_index:', generator_index
-            #print 'Voronoi_polygon_sorted_vertex_array:', Voronoi_polygon_sorted_vertex_array
-            current_Voronoi_polygon_surface_area_on_sphere = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(Voronoi_polygon_sorted_vertex_array,1.0)
-            sum_Voronoi_polygon_surface_areas += current_Voronoi_polygon_surface_area_on_sphere
+        random_dist_voronoi_instance = voronoi_utility.Voronoi_Sphere_Surface(filtered_array,1.0)
+        dictionary_Voronoi_region_surface_areas_for_each_generator = random_dist_voronoi_instance.Voronoi_polygons_spherical_surface()[2]
+        sum_Voronoi_polygon_surface_areas = sum(dictionary_Voronoi_region_surface_areas_for_each_generator.itervalues())
         numpy.testing.assert_almost_equal(sum_Voronoi_polygon_surface_areas, unit_sphere_surface_area,decimal=7,err_msg='Reconstituted surface area of Voronoi polygons on unit sphere should match theoretical surface area of sphere.')
             
     def test_spherical_triangle_surface_area_calculation(self):

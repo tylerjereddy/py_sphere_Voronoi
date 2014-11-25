@@ -266,10 +266,13 @@ class Voronoi_Sphere_Surface:
     
     '''
 
-    def __init__(self,points):
+    def __init__(self,points,sphere_radius=None):
         self.original_point_array = points
         self.sphere_centroid = numpy.average(self.original_point_array,axis=0)
-        self.estimated_sphere_radius = numpy.average(scipy.spatial.distance.cdist(self.original_point_array,self.sphere_centroid[numpy.newaxis,:]))
+        if not sphere_radius:
+            self.estimated_sphere_radius = numpy.average(scipy.spatial.distance.cdist(self.original_point_array,self.sphere_centroid[numpy.newaxis,:]))
+        else: 
+            self.estimated_sphere_radius = sphere_radius #if the radius of the sphere is known, it is pobably best to specify to avoid centroid bias in radius estimation, etc.
         self.hull_instance = scipy.spatial.ConvexHull(self.original_point_array)
 
     def Delaunay_triangulation_spherical_surface(self):
@@ -326,7 +329,14 @@ class Voronoi_Sphere_Surface:
             assert current_array_Voronoi_vertices.shape[0] >= 3, "All generators should be within Voronoi regions (polygons with at least 3 vertices)."
             dictionary_sorted_Voronoi_point_coordinates_for_each_generator[generator_index] = current_array_Voronoi_vertices
 
-        return (generator_Voronoi_region_dictionary, dictionary_sorted_Voronoi_point_coordinates_for_each_generator)
+        #now I want a useful dictionary data structure containing the surface areas of the Voronoi regions
+        dictionary_Voronoi_region_surface_areas_for_each_generator = {}
+        for generator_index, Voronoi_polygon_sorted_vertex_array in dictionary_sorted_Voronoi_point_coordinates_for_each_generator.iteritems():
+            current_Voronoi_polygon_surface_area_on_sphere = calculate_surface_area_of_a_spherical_Voronoi_polygon(Voronoi_polygon_sorted_vertex_array,self.estimated_sphere_radius)
+            assert current_Voronoi_polygon_surface_area_on_sphere > 0, "Obtained a surface area of zero for a Voronoi region."
+            dictionary_Voronoi_region_surface_areas_for_each_generator[generator_index] = current_Voronoi_polygon_surface_area_on_sphere
+
+        return (generator_Voronoi_region_dictionary, dictionary_sorted_Voronoi_point_coordinates_for_each_generator,dictionary_Voronoi_region_surface_areas_for_each_generator)
 
         
 
