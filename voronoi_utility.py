@@ -10,14 +10,16 @@ import numpy
 import numpy.linalg
 import pandas
 import math
+import numpy.random
 
-def generate_random_array_spherical_generators(num_generators,sphere_radius):
+def generate_random_array_spherical_generators(num_generators,sphere_radius,prng_object):
     '''Generate and return an array of shape (num_generators,3) random points on a sphere of given radius.
     Based on: Muller, M. E. "A Note on a Method for Generating Points Uniformly on N-Dimensional Spheres." Comm. Assoc. Comput. Mach. 2, 19-20, Apr. 1959.
-    And see: http://mathworld.wolfram.com/SpherePointPicking.html'''
+    And see: http://mathworld.wolfram.com/SpherePointPicking.html
+    prng_object is a pseudo random number generator object from numpy used for pinning down the random seed (so that pathological random states can be avoided as needed).
+    see: http://stackoverflow.com/a/5837352/2942522'''
     #generate Gaussian random variables:
-    import numpy.random
-    array_random_Gaussian_data = numpy.random.normal(loc=0.0,scale=1.0,size=(num_generators,3)) 
+    array_random_Gaussian_data = prng_object.normal(loc=0.0,scale=1.0,size=(num_generators,3)) 
     #I'm not sure if this is the proper approach, but try projecting to the sphere_radius (may want to check above literature more closely):
     spherical_polar_data = convert_cartesian_array_to_spherical_array(array_random_Gaussian_data)
     spherical_polar_data[...,0] = sphere_radius

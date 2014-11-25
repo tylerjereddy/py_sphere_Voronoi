@@ -214,8 +214,9 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
 
     def setUp(self):
         #generate a random distribution of points on the unit sphere (http://mathworld.wolfram.com/SpherePointPicking.html)
-        #go for 5000 random points
-        self.cartesian_coord_array = voronoi_utility.generate_random_array_spherical_generators(5000,1.0)
+        #go for 5000 random points that are always the same thanks to a pinned down pnrg object (http://stackoverflow.com/a/5837352/2942522):
+        self.prng = numpy.random.RandomState(117) #if I don't pin this down, then I can sometimes get pathological generator sets for which Voronoi diagrams are not available
+        self.cartesian_coord_array = voronoi_utility.generate_random_array_spherical_generators(5000,1.0,self.prng)
 
         self.spherical_triangle_coordinate_array = numpy.array([[0,0,1],[0,1,0],[1,0,0]]) #3 points on a unit sphere
         self.spherical_polygon_4_vertices_coord_array = numpy.array([[0,0,1],[0,1,0],[1,0,0],[0,-1,0]]) #4 points on a unit sphere
