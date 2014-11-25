@@ -282,6 +282,10 @@ class Voronoi_Sphere_Surface:
     ----------
     points: array, shape (npoints, 3)
         Coordinates of points to construct a Voronoi diagram on the surface of a sphere
+    sphere_radius: float
+        Radius of the sphere (providing radius is more accurate than forcing an estimate). Default None (force estimation).
+    sphere_center_origin_offset_vector: array, shape (3,)
+        A 1D numpy array that can be subtracted from the generators (original data points) to translate the center of the sphere back to the origin. Default None assumes already centered at origin.
     
     References
     ----------
@@ -290,8 +294,11 @@ class Voronoi_Sphere_Surface:
     
     '''
 
-    def __init__(self,points,sphere_radius=None):
-        self.original_point_array = points
+    def __init__(self,points,sphere_radius=None,sphere_center_origin_offset_vector=None):
+        if numpy.all(sphere_center_origin_offset_vector):
+            self.original_point_array = points - sphere_center_origin_offset_vector #translate generator data such that sphere center is at origin
+        else:
+            self.original_point_array = points
         self.sphere_centroid = numpy.average(self.original_point_array,axis=0)
         if not sphere_radius:
             self.estimated_sphere_radius = numpy.average(scipy.spatial.distance.cdist(self.original_point_array,self.sphere_centroid[numpy.newaxis,:]))
