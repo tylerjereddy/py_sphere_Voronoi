@@ -162,13 +162,17 @@ def calculate_surface_area_of_a_spherical_Voronoi_polygon(array_ordered_Voronoi_
 
 def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius):
     '''Takes an array of ordered Voronoi polygon vertices (for a single generator) and calculates the sum of the inner angles on the sphere surface. The resulting value is theta in the equation provided here: http://mathworld.wolfram.com/SphericalPolygon.html '''
+    if sphere_radius != 1.0:
+        #try to deal with non-unit circles by temporarily normalizing the data to radius 1:
+        spherical_polar_polygon_vertices = convert_cartesian_array_to_spherical_array(array_ordered_Voronoi_polygon_vertices)
+        spherical_polar_polygon_vertices[...,0] = 1.0
+        array_ordered_Voronoi_polygon_vertices = convert_spherical_array_to_cartesian_array(spherical_polar_polygon_vertices)
+
     num_vertices_in_Voronoi_polygon = array_ordered_Voronoi_polygon_vertices.shape[0] #the number of rows == number of vertices in polygon
     #two edges (great circle arcs actually) per vertex are needed to calculate tangent vectors / inner angle at that vertex
     current_vertex_index = 0
     list_Voronoi_poygon_angles_radians = []
     while current_vertex_index < num_vertices_in_Voronoi_polygon:
-        #print '-------------'
-        #print 'current_vertex_index:', current_vertex_index
         current_vertex_coordinate = array_ordered_Voronoi_polygon_vertices[current_vertex_index]
         if current_vertex_index == 0:
             previous_vertex_index = num_vertices_in_Voronoi_polygon - 1
@@ -182,19 +186,11 @@ def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_order
         current_vertex = array_ordered_Voronoi_polygon_vertices[current_vertex_index] 
         previous_vertex = array_ordered_Voronoi_polygon_vertices[previous_vertex_index]
         next_vertex = array_ordered_Voronoi_polygon_vertices[next_vertex_index] 
-        #print 'subtriangle vertex coords:', previous_vertex,current_vertex,next_vertex
         #produce a,b,c for law of cosines using spherical distance (http://mathworld.wolfram.com/SphericalDistance.html)
         a = math.acos(numpy.dot(current_vertex,next_vertex))
         b = math.acos(numpy.dot(next_vertex,previous_vertex))
         c = math.acos(numpy.dot(previous_vertex,current_vertex))
-        #print 'a,b,c side lengths on subtriangle:', a, b, c
-        #try outputting straight-line Euclidean distances for debugging comparison, as I think there are some suspect edge lengths coming out from this
-        a_euclid = scipy.spatial.distance.euclidean(current_vertex,next_vertex)
-        b_euclid = scipy.spatial.distance.euclidean(next_vertex,previous_vertex)
-        c_euclid = scipy.spatial.distance.euclidean(previous_vertex,current_vertex)
-        #print 'Euclidean edge lengths (debug):', a_euclid,b_euclid,c_euclid
         current_vertex_inner_angle_on_sphere_surface = math.acos((math.cos(b) - math.cos(a)*math.cos(c)) / (math.sin(a)*math.sin(c)))
-        #print 'current vertex inner angle (degrees):', math.degrees(current_vertex_inner_angle_on_sphere_surface)
 
         list_Voronoi_poygon_angles_radians.append(current_vertex_inner_angle_on_sphere_surface)
 
