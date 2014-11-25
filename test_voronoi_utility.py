@@ -214,22 +214,14 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
 
     def setUp(self):
         #generate a random distribution of points on the unit sphere (http://mathworld.wolfram.com/SpherePointPicking.html)
-        #go for 1000 random points
-        self.u = numpy.random.random((1000,)) #200 points on interval [0,1); ideally want (0,1), but perhaps close enough?
-        self.v = numpy.random.random((1000,))
-        self.theta_array = 2 * math.pi * self.u
-        self.phi_array = numpy.arccos((2*self.v - 1.0))
-        self.r_array = numpy.ones((1000,))
-        self.spherical_polar_coord_array = numpy.column_stack((self.r_array,self.theta_array,self.phi_array))
-        #convert to Cartesian coordinates
-        self.cartesian_coord_array = voronoi_utility.convert_spherical_array_to_cartesian_array(self.spherical_polar_coord_array)
+        #go for 5000 random points
+        self.cartesian_coord_array = voronoi_utility.generate_random_array_spherical_generators(5000,1.0)
 
         self.spherical_triangle_coordinate_array = numpy.array([[0,0,1],[0,1,0],[1,0,0]]) #3 points on a unit sphere
         self.spherical_polygon_4_vertices_coord_array = numpy.array([[0,0,1],[0,1,0],[1,0,0],[0,-1,0]]) #4 points on a unit sphere
 
     def tearDown(self):
         del self.cartesian_coord_array
-        del self.spherical_polar_coord_array
         del self.spherical_triangle_coordinate_array
 
 

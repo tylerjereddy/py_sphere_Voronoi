@@ -9,6 +9,26 @@ import numpy.linalg
 import pandas
 import math
 
+def generate_random_array_spherical_generators(num_generators,sphere_radius):
+    '''Generate and return an array of shape (num_generators,3) random points on a sphere of given radius.
+    Based on: Muller, M. E. "A Note on a Method for Generating Points Uniformly on N-Dimensional Spheres." Comm. Assoc. Comput. Mach. 2, 19-20, Apr. 1959.
+    And see: http://mathworld.wolfram.com/SpherePointPicking.html'''
+    #generate Gaussian random variables:
+    import numpy.random
+    array_random_Gaussian_data = numpy.random.normal(loc=0.0,scale=1.0,size=(num_generators,3)) 
+    #I'm not sure if this is the proper approach, but try projecting to the sphere_radius (may want to check above literature more closely):
+    spherical_polar_data = convert_cartesian_array_to_spherical_array(array_random_Gaussian_data)
+    spherical_polar_data[...,0] = sphere_radius
+    cartesian_random_points = convert_spherical_array_to_cartesian_array(spherical_polar_data)
+    #filter out any duplicate generators:
+    df_random_points = pandas.DataFrame(cartesian_random_points)
+    df_random_points_no_duplicates = df_random_points.drop_duplicates()
+    array_random_spherical_generators = df_random_points_no_duplicates.as_matrix()
+    return array_random_spherical_generators
+
+
+
+
 def estimate_surface_area_spherical_polygon_JPL(array_ordered_Voronoi_polygon_vertices,sphere_radius):
     '''Estimate the area of a spherical polygon using the method proposed in a JPL documnet: http://trs-new.jpl.nasa.gov/dspace/bitstream/2014/41271/1/07-0286.pdf
     My attempts at implementing the exact solution for spherical polygon surface area have been very problematic so I'm trying this instead.
