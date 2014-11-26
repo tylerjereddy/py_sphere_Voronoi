@@ -217,11 +217,11 @@ class Voronoi_Sphere_Surface:
     Parameters
     ----------
     points : *array, shape (npoints, 3)*
-        Coordinates of points to construct a Voronoi diagram on the surface of a sphere
+        Coordinates of points used to construct a Voronoi diagram on the surface of a sphere.
     sphere_radius : *float*
-        Radius of the sphere (providing radius is more accurate than forcing an estimate). Default None (force estimation).
+        Radius of the sphere (providing radius is more accurate than forcing an estimate). Default: None (force estimation).
     sphere_center_origin_offset_vector : *array, shape (3,)*
-        A 1D numpy array that can be subtracted from the generators (original data points) to translate the center of the sphere back to the origin. Default None assumes already centered at origin.
+        A 1D numpy array that can be subtracted from the generators (original data points) to translate the center of the sphere back to the origin. Default: None assumes already centered at origin.
     
     References
     ----------
@@ -242,20 +242,13 @@ class Voronoi_Sphere_Surface:
             self.estimated_sphere_radius = sphere_radius #if the radius of the sphere is known, it is pobably best to specify to avoid centroid bias in radius estimation, etc.
         self.hull_instance = scipy.spatial.ConvexHull(self.original_point_array)
 
-    def Delaunay_triangulation_spherical_surface(self):
+    def delaunay_triangulation_spherical_surface(self):
         '''Delaunay tessellation of the points on the surface of the sphere. This is simply the 3D convex hull of the points. Returns a shape (N,3,3) array of points representing the vertices of the Delaunay triangulation on the sphere (i.e., N three-dimensional triangle vertex arrays).'''
         array_points_vertices_Delaunay_triangulation = produce_triangle_vertex_coordinate_array_Delaunay_sphere(self.hull_instance)
         return array_points_vertices_Delaunay_triangulation
 
-    def Voronoi_vertices_spherical_surface(self):
-        '''Determine the Voronoi vertices on the surface of the sphere given the vertices of the Delaunay triangulation on the surface of the sphere. Inspired by response here: http://stackoverflow.com/a/22234783'''
-        facet_coordinate_array_Delaunay_triangulation = produce_triangle_vertex_coordinate_array_Delaunay_sphere(self.hull_instance)
-        array_Voronoi_vertices = produce_array_Voronoi_vertices_on_sphere_surface(facet_coordinate_array_Delaunay_triangulation,self.estimated_sphere_radius,self.sphere_centroid)
-        assert facet_coordinate_array_Delaunay_triangulation.shape[0] == array_Voronoi_vertices.shape[0], "The number of Delaunay triangles should match the number of Voronoi vertices."
-        return array_Voronoi_vertices
-
-    def Voronoi_polygons_spherical_surface(self):
-        '''Compute useful dictionary data structure relating to the polygons in the spherical Voronoi diagram and the original data points that they contain.'''
+    def voronoi_region_vertices_spherical_surface(self):
+        '''Returns a dictionary with the sorted (non-intersecting) polygon vertices for the Voronoi regions associated with each generator (original data point) index. A dictionary entry would be structured as follows: {generator_index : numpy_array_sorted_voronoi_region_polygon_vertices, ...}.'''
         #generate the array of Voronoi vertices:
         facet_coordinate_array_Delaunay_triangulation = produce_triangle_vertex_coordinate_array_Delaunay_sphere(self.hull_instance)
         array_Voronoi_vertices = produce_array_Voronoi_vertices_on_sphere_surface(facet_coordinate_array_Delaunay_triangulation,self.estimated_sphere_radius,self.sphere_centroid)
@@ -296,14 +289,17 @@ class Voronoi_Sphere_Surface:
             assert current_array_Voronoi_vertices.shape[0] >= 3, "All generators should be within Voronoi regions (polygons with at least 3 vertices)."
             dictionary_sorted_Voronoi_point_coordinates_for_each_generator[generator_index] = current_array_Voronoi_vertices
 
-        #now I want a useful dictionary data structure containing the surface areas of the Voronoi regions
+        return dictionary_sorted_Voronoi_point_coordinates_for_each_generator
+
+    def voronoi_region_surface_areas_spherical_surface(self):
+        '''Returns a dictionary with the estimated surface areas of the Voronoi region polygons corresponding to each generator (original data point) index. Attempts to calculate the spherical surface area but falls back to a planar estimate if the spherical excess is <= 0. '''
+        dictionary_sorted_Voronoi_point_coordinates_for_each_generator = self.voronoi_region_vertices_spherical_surface()
         dictionary_Voronoi_region_surface_areas_for_each_generator = {}
         for generator_index, Voronoi_polygon_sorted_vertex_array in dictionary_sorted_Voronoi_point_coordinates_for_each_generator.iteritems():
             current_Voronoi_polygon_surface_area_on_sphere = calculate_surface_area_of_a_spherical_Voronoi_polygon(Voronoi_polygon_sorted_vertex_array,self.estimated_sphere_radius)
             assert current_Voronoi_polygon_surface_area_on_sphere > 0, "Obtained a surface area of zero for a Voronoi region."
             dictionary_Voronoi_region_surface_areas_for_each_generator[generator_index] = current_Voronoi_polygon_surface_area_on_sphere
-
-        return (generator_Voronoi_region_dictionary, dictionary_sorted_Voronoi_point_coordinates_for_each_generator,dictionary_Voronoi_region_surface_areas_for_each_generator)
+        return dictionary_Voronoi_region_surface_areas_for_each_generator
 
         
 

@@ -78,7 +78,7 @@ class Test_delaunay_triangulation_on_sphere_surface(unittest.TestCase):
 
         
         voronoi_instance_small = voronoi_utility.Voronoi_Sphere_Surface(self.simple_sphere_coordinate_array)
-        Delaunay_point_array_small = voronoi_instance_small.Delaunay_triangulation_spherical_surface() #should be shape (N,3,3) for N triangles and their vertices in 3D space
+        Delaunay_point_array_small = voronoi_instance_small.delaunay_triangulation_spherical_surface() #should be shape (N,3,3) for N triangles and their vertices in 3D space
 
         node_dictionary = {}
         node_counter = 1
@@ -221,14 +221,14 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         input_sphere_coordinate_array[...,1] = y.ravel()
         input_sphere_coordinate_array[...,2] = z.ravel()
         voronoi_instance = voronoi_utility.Voronoi_Sphere_Surface(input_sphere_coordinate_array,1.0)
-        dictionary_Voronoi_region_surface_areas_for_each_generator = voronoi_instance.Voronoi_polygons_spherical_surface()[2]
+        dictionary_Voronoi_region_surface_areas_for_each_generator = voronoi_instance.voronoi_region_surface_areas_spherical_surface()
         sum_Voronoi_polygon_surface_areas = sum(dictionary_Voronoi_region_surface_areas_for_each_generator.itervalues())
         numpy.testing.assert_almost_equal(sum_Voronoi_polygon_surface_areas, self.unit_sphere_surface_area,decimal=7,err_msg='Reconstituted surface area of Voronoi polygons on unit sphere should match theoretical surface area of sphere.')
 
     def test_spherical_voronoi_surface_area_reconstitution(self):
         '''Given a pseudo-random set of points on the unit sphere, the sum of the surface areas of the Voronoi polygons should be equal to the surface area of the sphere itself.'''
         random_dist_voronoi_instance = voronoi_utility.Voronoi_Sphere_Surface(self.cartesian_coord_array,1.0)
-        dictionary_Voronoi_region_surface_areas_for_each_generator = random_dist_voronoi_instance.Voronoi_polygons_spherical_surface()[2]
+        dictionary_Voronoi_region_surface_areas_for_each_generator = random_dist_voronoi_instance.voronoi_region_surface_areas_spherical_surface()
         sum_Voronoi_polygon_surface_areas = sum(dictionary_Voronoi_region_surface_areas_for_each_generator.itervalues())
         percent_reconstituted_surface_area = sum_Voronoi_polygon_surface_areas / self.unit_sphere_surface_area * 100.
         self.assertGreater(percent_reconstituted_surface_area,99.0,msg='Reconstituted surface area of Voronoi polygons on unit sphere should match theoretical surface area of sphere within 1 %.') #using a slightly more relaxed testing requirement as it seems fairly clear that the code won't match to multiple decimal places anytime soon
@@ -237,7 +237,7 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         '''Given a pseudo-random set of points on the unit sphere, the sum of the surface areas of the Voronoi polygons should be equal to the surface area of the sphere itself.
         Introduces additional complication of not having its center point at the origin.'''
         random_dist_voronoi_instance = voronoi_utility.Voronoi_Sphere_Surface(self.cartesian_coord_array + 3.0,1.0,numpy.array([3.0,3.0,3.0])) # +3 translation to all Cartesian coords [amazingly, this seems to fail is I use a value of 4.0, but 3.0 is fine --floating-point sensitivity somewhere?!]
-        dictionary_Voronoi_region_surface_areas_for_each_generator = random_dist_voronoi_instance.Voronoi_polygons_spherical_surface()[2]
+        dictionary_Voronoi_region_surface_areas_for_each_generator = random_dist_voronoi_instance.voronoi_region_surface_areas_spherical_surface()
         sum_Voronoi_polygon_surface_areas = sum(dictionary_Voronoi_region_surface_areas_for_each_generator.itervalues())
         percent_reconstituted_surface_area = sum_Voronoi_polygon_surface_areas / self.unit_sphere_surface_area * 100.
         self.assertGreater(percent_reconstituted_surface_area,99.0,msg='Reconstituted surface area of Voronoi polygons on unit sphere should match theoretical surface area of sphere within 1 %.') 
@@ -245,7 +245,7 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
     def test_spherical_voronoi_surface_area_reconstitution_large_radius(self):
         '''Given a pseudo-random set of points on a sphere, the sum of the surface areas of the Voronoi polygons should be equal to the surface area of the sphere itself. Using a much larger radius (self.large_sphere_radius) than the standard unit sphere in this test. As it stands, this test is very sensitive to the value of the radius -- beyond 2.0 it fails, and 1.9999 also fails--floating point issues?'''
         random_dist_voronoi_instance = voronoi_utility.Voronoi_Sphere_Surface(self.cartesian_coord_array_large_radius,self.large_sphere_radius)
-        dictionary_Voronoi_region_surface_areas_for_each_generator = random_dist_voronoi_instance.Voronoi_polygons_spherical_surface()[2]
+        dictionary_Voronoi_region_surface_areas_for_each_generator = random_dist_voronoi_instance.voronoi_region_surface_areas_spherical_surface()
         sum_Voronoi_polygon_surface_areas = sum(dictionary_Voronoi_region_surface_areas_for_each_generator.itervalues())
         percent_reconstituted_surface_area = sum_Voronoi_polygon_surface_areas / (math.pi * 4.0 * (self.large_sphere_radius ** 2)) * 100.
         self.assertGreater(percent_reconstituted_surface_area,99.0,msg='Reconstituted surface area of Voronoi polygons on unit sphere should match theoretical surface area of sphere within 1 %.') 
