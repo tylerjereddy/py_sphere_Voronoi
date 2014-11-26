@@ -16,7 +16,7 @@ import sys
 import os
 import mock
 
-MOCK_MODULES = ['numpy','scipy','scipy.spatial.distance']
+MOCK_MODULES = ['numpy','scipy','scipy.spatial','scipy.spatial.distance','numpy.linalg','pandas','numpy.random']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 
