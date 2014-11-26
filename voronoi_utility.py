@@ -281,6 +281,28 @@ class Voronoi_Sphere_Surface:
     97.87551
     >>> #that seems reasonable for now
 
+    For completeness, produce the Delaunay triangulation on the surface of the unit sphere for the same data set:
+
+    >>> Delaunay_triangles = voronoi_instance.delaunay_triangulation_spherical_surface()
+    >>> fig2 = plt.figure()
+    >>> fig2.set_size_inches(2,2)
+    >>> ax = fig2.add_subplot(111, projection='3d')
+    >>> for triangle_coordinate_array in Delaunay_triangles:
+    ...     m = ax.plot(triangle_coordinate_array[...,0],triangle_coordinate_array[...,1],triangle_coordinate_array[...,2],c='r',alpha=0.1)
+    ...     connecting_array = np.delete(triangle_coordinate_array,1,0)
+    ...     n = ax.plot(connecting_array[...,0],connecting_array[...,1],connecting_array[...,2],c='r',alpha=0.1)
+    >>> o = ax.scatter(random_coordinate_array[...,0],random_coordinate_array[...,1],random_coordinate_array[...,2],c='k',lw=0,s=0.9)
+    >>> ax.set_xlim(-1,1);ax.set_ylim(-1,1);ax.set_zlim(-1,1);
+    (-1, 1)
+    (-1, 1)
+    (-1, 1)
+    >>> ax.set_xticks([-1,1]);ax.set_yticks([-1,1]);ax.set_zticks([-1,1]); #doctest: +ELLIPSIS
+    [<matplotlib.axis.XTick object at 0x...>, <matplotlib.axis.XTick object at 0x...>]
+    [<matplotlib.axis.XTick object at 0x...>, <matplotlib.axis.XTick object at 0x...>]
+    [<matplotlib.axis.XTick object at 0x...>, <matplotlib.axis.XTick object at 0x...>]
+    >>> plt.tick_params(axis='both', which='major', labelsize=6)
+
+    .. image:: example_Delaunay.png
 
     '''
 
