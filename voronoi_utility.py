@@ -3,8 +3,12 @@
 The purpose of this Python module is to provide utility code for handling spherical Voronoi Diagrams.'''
 
 import scipy
-if int(scipy.__version__.split('.')[1]) < 13:
-    raise ImportError('Module requires version of scipy module >= 0.13.0')
+try:
+    if int(scipy.__version__.split('.')[1]) < 13:
+        raise ImportError('Module requires version of scipy module >= 0.13.0')
+except AttributeError: #handle this for sphinx build process on readthedocs because of module mocking
+    pass 
+
 import scipy.spatial
 import numpy
 import numpy.linalg
