@@ -270,6 +270,17 @@ class Voronoi_Sphere_Surface:
 
     .. image:: example_random_Voronoi_plot.png
 
+    Now, calculate the surface areas of the Voronoi region polygons and verify that the reconsituted surface area is sensible:
+
+    >>> import math
+    >>> dictionary_voronoi_polygon_surface_areas = voronoi_instance.voronoi_region_surface_areas_spherical_surface()
+    >>> theoretical_surface_area_unit_sphere = 4 * math.pi
+    >>> reconstituted_surface_area_Voronoi_regions = sum(dictionary_voronoi_polygon_surface_areas.itervalues())
+    >>> percent_area_recovery = round((reconstituted_surface_area_Voronoi_regions / theoretical_surface_area_unit_sphere) * 100., 5)
+    >>> print percent_area_recovery
+    97.87551
+    >>> #that seems reasonable for now
+
 
     '''
 
