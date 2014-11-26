@@ -248,7 +248,7 @@ class Voronoi_Sphere_Surface:
         return array_points_vertices_Delaunay_triangulation
 
     def voronoi_region_vertices_spherical_surface(self):
-        '''Returns a dictionary with the sorted (non-intersecting) polygon vertices for the Voronoi regions associated with each generator (original data point) index. A dictionary entry would be structured as follows: {generator_index : numpy_array_sorted_voronoi_region_polygon_vertices, ...}.'''
+        '''Returns a dictionary with the sorted (non-intersecting) polygon vertices for the Voronoi regions associated with each generator (original data point) index. A dictionary entry would be structured as follows: `{generator_index : array_polygon_vertices, ...}`.'''
         #generate the array of Voronoi vertices:
         facet_coordinate_array_Delaunay_triangulation = produce_triangle_vertex_coordinate_array_Delaunay_sphere(self.hull_instance)
         array_Voronoi_vertices = produce_array_Voronoi_vertices_on_sphere_surface(facet_coordinate_array_Delaunay_triangulation,self.estimated_sphere_radius,self.sphere_centroid)
@@ -292,7 +292,7 @@ class Voronoi_Sphere_Surface:
         return dictionary_sorted_Voronoi_point_coordinates_for_each_generator
 
     def voronoi_region_surface_areas_spherical_surface(self):
-        '''Returns a dictionary with the estimated surface areas of the Voronoi region polygons corresponding to each generator (original data point) index. Attempts to calculate the spherical surface area but falls back to a planar estimate if the spherical excess is <= 0. '''
+        '''Returns a dictionary with the estimated surface areas of the Voronoi region polygons corresponding to each generator (original data point) index. Attempts to calculate the spherical surface area but falls back to a planar estimate if the spherical excess is <= 0. An example dictionary entry: `{generator_index : surface_area, ...}`.'''
         dictionary_sorted_Voronoi_point_coordinates_for_each_generator = self.voronoi_region_vertices_spherical_surface()
         dictionary_Voronoi_region_surface_areas_for_each_generator = {}
         for generator_index, Voronoi_polygon_sorted_vertex_array in dictionary_sorted_Voronoi_point_coordinates_for_each_generator.iteritems():
