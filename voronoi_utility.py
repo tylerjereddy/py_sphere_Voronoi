@@ -34,63 +34,6 @@ def generate_random_array_spherical_generators(num_generators,sphere_radius,prng
     array_random_spherical_generators = df_random_points_no_duplicates.as_matrix()
     return array_random_spherical_generators
 
-
-
-
-def estimate_surface_area_spherical_polygon_JPL(array_ordered_Voronoi_polygon_vertices,sphere_radius):
-    '''Estimate the area of a spherical polygon using the method proposed in a JPL documnet: http://trs-new.jpl.nasa.gov/dspace/bitstream/2014/41271/1/07-0286.pdf
-    My attempts at implementing the exact solution for spherical polygon surface area have been very problematic so I'm trying this instead.
-    I think this may only apply to polygons that do not contain either pole of the sphere.'''
-    current_vertex_index = 0
-    surface_area_spherical_polygon = 0
-    num_vertices_in_Voronoi_polygon = array_ordered_Voronoi_polygon_vertices.shape[0] #the number of rows == number of vertices in polygon
-    while current_vertex_index < num_vertices_in_Voronoi_polygon:
-        #print '-------------'
-        #print 'current_vertex_index:', current_vertex_index
-        if current_vertex_index == 0:
-            previous_vertex_index = num_vertices_in_Voronoi_polygon - 1
-        else:
-            previous_vertex_index = current_vertex_index - 1
-        if current_vertex_index == num_vertices_in_Voronoi_polygon - 1:
-            next_vertex_index = 0
-        else:
-            next_vertex_index = current_vertex_index + 1
-
-        print 'previous_vertex_index:', previous_vertex_index
-        print 'current_vertex_index:', current_vertex_index
-        print 'next_vertex_index:', next_vertex_index
-
-        previous_vertex_coordinate = array_ordered_Voronoi_polygon_vertices[previous_vertex_index]
-        current_vertex_coordinate = array_ordered_Voronoi_polygon_vertices[current_vertex_index]
-        next_vertex_coordinate = array_ordered_Voronoi_polygon_vertices[next_vertex_index]
-
-        previous_vertex_spherical_polar_coordinates = convert_cartesian_array_to_spherical_array(previous_vertex_coordinate)
-        current_vertex_spherical_polar_coordinates = convert_cartesian_array_to_spherical_array(current_vertex_coordinate)
-        next_vertex_spherical_polar_coordinates = convert_cartesian_array_to_spherical_array(next_vertex_coordinate)
-        
-        next_vertex_theta = next_vertex_spherical_polar_coordinates[1]
-        next_vertex_phi = next_vertex_spherical_polar_coordinates[2]
-        current_vertex_theta = current_vertex_spherical_polar_coordinates[1]
-        current_vertex_phi = current_vertex_spherical_polar_coordinates[2]
-        previous_vertex_theta = previous_vertex_spherical_polar_coordinates[1]
-        previous_vertex_phi = previous_vertex_spherical_polar_coordinates[2]
-        
-        #looks like my phi == their phi; my theta == their lambda
-        delta_lambda = (next_vertex_theta - previous_vertex_theta)
-        sine_value = math.sin(current_vertex_phi)
-        print 'delta_lambda:', delta_lambda
-        print 'sine_value:', sine_value
-        edge_contribution_to_surface_area_of_polygon =  delta_lambda * sine_value
-        print 'edge_contribution_to_surface_area_of_polygon:', edge_contribution_to_surface_area_of_polygon
-
-        surface_area_spherical_polygon += edge_contribution_to_surface_area_of_polygon
-
-        current_vertex_index += 1
-
-    surface_area_spherical_polygon = surface_area_spherical_polygon * (-(sphere_radius**2) / 2.)
-    assert surface_area_spherical_polygon > 0, "Surface areas of spherical polygons should be > 0 but got: {SA}".format(SA=surface_area_spherical_polygon)
-    return surface_area_spherical_polygon
-
 def filter_polygon_vertex_coordinates_for_extreme_proximity(array_ordered_Voronoi_polygon_vertices,sphere_radius):
     '''Merge (take the midpoint of) polygon vertices that are judged to be extremely close together and return the filtered polygon vertex array. The purpose is to alleviate numerical complications that may arise during surface area calculations involving polygons with ultra-close / nearly coplanar vertices.'''
     while 1:
@@ -203,13 +146,6 @@ def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_order
     theta = numpy.sum(numpy.array(list_Voronoi_poygon_angles_radians))
 
     return theta 
-
-def calculate_derivative_great_circle_arc_specified_point(edge_coordinates, sphere_radius):
-    '''Inspired loosely by http://glowingpython.blogspot.co.uk/2013/02/visualizing-tangent.html
-        Basic idea is to calculate the derivative of the great circle arc (spanning over the edge_coordinates) at a specified coordinate, as this will be important in the calculation of spherical polygon surface areas. Would be convenient to return a vector for the derivative line.'''
-    #now based on http://stackoverflow.com/a/1342706:
-    derivative_estimate_vector = numpy.cross(edge_coordinates[1],numpy.cross(edge_coordinates[0],edge_coordinates[1]))
-    return derivative_estimate_vector #when calculating the angle between these in another function, would probably want to translate the derivative vertex to the origin
 
 def convert_cartesian_array_to_spherical_array(coord_array,angle_measure='radians'):
     '''Take shape (N,3) cartesian coord_array and return an array of the same shape in spherical polar form (r, theta, phi). Based on StackOverflow response: http://stackoverflow.com/a/4116899
