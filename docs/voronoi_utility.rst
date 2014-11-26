@@ -2,5 +2,7 @@
 Voronoi Diagrams on a Spherical Surface
 =======================================
 
-.. automodule:: voronoi_utility
+.. module:: voronoi_utility
+
+.. autoclass:: Voronoi_Sphere_Surface
 	:members:
