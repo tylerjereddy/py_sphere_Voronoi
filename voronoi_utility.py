@@ -270,7 +270,7 @@ class Voronoi_Sphere_Surface:
 
     .. image:: example_random_Voronoi_plot.png
 
-    Now, calculate the surface areas of the Voronoi region polygons and verify that the reconsituted surface area is sensible:
+    Now, calculate the surface areas of the Voronoi region polygons and verify that the reconstituted surface area is sensible:
 
     >>> import math
     >>> dictionary_voronoi_polygon_surface_areas = voronoi_instance.voronoi_region_surface_areas_spherical_surface()
