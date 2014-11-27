@@ -223,10 +223,23 @@ class Voronoi_Sphere_Surface:
     sphere_center_origin_offset_vector : *array, shape (3,)*
         A 1D numpy array that can be subtracted from the generators (original data points) to translate the center of the sphere back to the origin. Default: None assumes already centered at origin.
     
+    Notes
+    -----
+
+    The algorithm depends on the important realization that the convex hull of the generators on the sphere surface is equivalent to the Delaunay triangulation [Caroli]_. The Delaunay facet normals are then equivalent to the Voronoi vertices on the surface of the sphere [Fortune]_. The fact that each Voronoi vertex is equidistant to at least three generators can be used to build an appropriate data structure associating Voronoi vertices with their contained generator.
+
+    The calculation of surface areas for the Voronoi regions currently appears to be susceptible to numerical instabilities, which may in part relate to arc cosine operations. For example, sphere radii of 1.9999 or 87.0 are pathological test cases but radii of 2.0 or 1.1 are tolerated. In theory, the surface area of a spherical polygon can be calculated using the following equation [Weisstein]_:
+
+    .. math:: S = [\\theta - (n-2) \pi]R^2
+
+    Where :math:`\\theta` is the sum of the inner angles of the polygon, :math:`R` is sphere radius, and :math:`n` is the number of polygon vertices. Unfortunately, as `n` approaches a large number of vertices and / or in the presence of nearly-coplanar vertices, the equation is susceptible to producing invalid areas :math:`\le 0`. In such cases, the algorithm falls back to a conventional surface area calculation for a planar polygon, as an approximation.
+
     References
     ----------
     
     .. [Caroli] Caroli et al. (2009) INRIA 7004
+    .. [Fortune] Fortune, S. http://www.qhull.org/html/qdelaun.htm
+    .. [Weisstein] Weisstein, Eric W. "Spherical Polygon." From MathWorld--A Wolfram Web Resource. http://mathworld.wolfram.com/SphericalPolygon.html
     
     Examples
     --------
