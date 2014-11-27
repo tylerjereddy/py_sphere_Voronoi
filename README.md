@@ -1,4 +1,14 @@
-py_sphere_Voronoi
-=================
+Voronoi diagrams on the surface of a Sphere
+===========================================
 
-Python utility code for handling spherical Voronoi Diagrams
+A Python module for obtaining Voronoi diagrams on the surfaces of spheres, including the calculation of Voronoi region surface areas. Applications may range from calculating area per lipid in spherical viruses to geographical parsing.
+
+The documentation for the project is available here: http://py-sphere-voronoi.readthedocs.org/en/latest/voronoi_utility.html
+
+This project is still in development and some of the algorithm weaknesses are highlighted in the above documentation.
+
+For contributions:
+  * ensure most/all unit tests pass (run: nosetests)
+  * ensure all doctests pass (run: python voronoi_utility.py)
+  * if you import new modules, you may need to mock them in the Sphinx conf.py documentation file so that the docs are properly compiled by readthedocs
+  * attempt to match the [numpy documentation standard](https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt) as closely as possible
