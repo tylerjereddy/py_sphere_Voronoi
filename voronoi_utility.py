@@ -16,6 +16,20 @@ import pandas
 import math
 import numpy.random
 
+def calculate_Vincenty_distance_between_spherical_points(cartesian_array_1,cartesian_array_2,sphere_radius):
+    '''Apparently, the special case of the Vincenty formula (http://en.wikipedia.org/wiki/Great-circle_distance) may be the most accurate method for calculating great-circle distances.'''
+    spherical_array_1 = convert_cartesian_array_to_spherical_array(cartesian_array_1)
+    spherical_array_2 = convert_cartesian_array_to_spherical_array(cartesian_array_2)
+    lambda_1 = spherical_array_1[1]
+    lambda_2 = spherical_array_2[1]
+    phi_1 = spherical_array_1[2]
+    phi_2 = spherical_array_2[2]
+    delta_lambda = abs(lambda_2 - lambda_1)
+    delta_phi = abs(phi_2 - phi_1)
+    radian_angle = math.atan2( math.sqrt( (math.cos(phi_2)*math.sin(delta_lambda))**2 + (math.cos(phi_1)*math.sin(phi_2) - math.sin(phi_1)*math.cos(phi_2)*math.cos(delta_lambda)  )**2 ),  (math.sin(phi_1) * math.sin(phi_2) + math.cos(phi_1) * math.cos(phi_2) * math.cos(delta_lambda) ) )
+    spherical_distance = sphere_radius * radian_angle
+    return spherical_distance
+
 def calculate_haversine_distance_between_spherical_points(cartesian_array_1,cartesian_array_2,sphere_radius):
     '''Calculate the haversine-based distance between two points on the surface of a sphere. Should be more accurate than the arc cosine strategy. See, for example: http://en.wikipedia.org/wiki/Haversine_formula'''
     spherical_array_1 = convert_cartesian_array_to_spherical_array(cartesian_array_1)
@@ -146,15 +160,20 @@ def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_order
         next_vertex = array_ordered_Voronoi_polygon_vertices[next_vertex_index] 
         #print 'angle calc vertex coords:', [convert_cartesian_array_to_spherical_array(vertex) for vertex in [current_vertex,previous_vertex,next_vertex]]
         #produce a,b,c for law of cosines using spherical distance (http://mathworld.wolfram.com/SphericalDistance.html)
-        old_a = math.acos(numpy.dot(current_vertex,next_vertex))
-        old_b = math.acos(numpy.dot(next_vertex,previous_vertex))
-        old_c = math.acos(numpy.dot(previous_vertex,current_vertex))
+        #old_a = math.acos(numpy.dot(current_vertex,next_vertex))
+        #old_b = math.acos(numpy.dot(next_vertex,previous_vertex))
+        #old_c = math.acos(numpy.dot(previous_vertex,current_vertex))
         #print 'law of cosines a,b,c:', old_a,old_b,old_c
-        a = calculate_haversine_distance_between_spherical_points(current_vertex,next_vertex,sphere_radius)
-        b = calculate_haversine_distance_between_spherical_points(next_vertex,previous_vertex,sphere_radius)
-        c = calculate_haversine_distance_between_spherical_points(previous_vertex,current_vertex,sphere_radius)
+        #a = calculate_haversine_distance_between_spherical_points(current_vertex,next_vertex,sphere_radius)
+        #b = calculate_haversine_distance_between_spherical_points(next_vertex,previous_vertex,sphere_radius)
+        #c = calculate_haversine_distance_between_spherical_points(previous_vertex,current_vertex,sphere_radius)
+        a = calculate_Vincenty_distance_between_spherical_points(current_vertex,next_vertex,sphere_radius)
+        b = calculate_Vincenty_distance_between_spherical_points(next_vertex,previous_vertex,sphere_radius)
+        c = calculate_Vincenty_distance_between_spherical_points(previous_vertex,current_vertex,sphere_radius)
         #print 'law of haversines a,b,c:', a,b,c
         pre_acos_term = (math.cos(b) - math.cos(a)*math.cos(c)) / (math.sin(a)*math.sin(c))
+        if abs(pre_acos_term) > 1.0:
+            break
         #print 'pre_acos_term:', pre_acos_term
         current_vertex_inner_angle_on_sphere_surface = math.acos(pre_acos_term)
 
@@ -162,7 +181,10 @@ def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_order
 
         current_vertex_index += 1
 
-    theta = numpy.sum(numpy.array(list_Voronoi_poygon_angles_radians))
+    if abs(pre_acos_term) > 1.0:
+        theta = 0
+    else:
+        theta = numpy.sum(numpy.array(list_Voronoi_poygon_angles_radians))
 
     return theta 
 

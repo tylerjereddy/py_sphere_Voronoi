@@ -324,7 +324,7 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         self.assertEqual(test_surface_area,theoretical_surface_area)
 
 
-class Test_haversine_code(unittest.TestCase):
+class Test_haversine_and_Vincenty_code(unittest.TestCase):
     
     def setUp(self):
         self.coordinates_on_sphere_1 = numpy.array([[0,0,1],[1,0,0]])
@@ -346,9 +346,15 @@ class Test_haversine_code(unittest.TestCase):
         calculated_spherical_distance = voronoi_utility.calculate_haversine_distance_between_spherical_points(self.coordinates_on_sphere_2[0],self.coordinates_on_sphere_2[1],87.0)
         numpy.testing.assert_almost_equal(calculated_spherical_distance,self.distance_on_sphere_2,decimal=6)
 
+    def simple_test_Vincenty_formula(self):
+        '''Test special case for Vincenty formula for two points on the unit sphere.'''
+        calculated_spherical_distance = voronoi_utility.calculate_Vincenty_distance_between_spherical_points(self.coordinates_on_sphere_1[0],self.coordinates_on_sphere_1[1],1.0)
+        numpy.testing.assert_almost_equal(calculated_spherical_distance,self.distance_on_sphere_1,decimal=6)
 
-
-
+    def simple_test_Vincenty_formula_larger_sphere(self):
+        '''Test special case for Vincenty formula for two points on a larger sphere.'''
+        calculated_spherical_distance = voronoi_utility.calculate_Vincenty_distance_between_spherical_points(self.coordinates_on_sphere_2[0],self.coordinates_on_sphere_2[1],87.0)
+        numpy.testing.assert_almost_equal(calculated_spherical_distance,self.distance_on_sphere_2,decimal=6)
             
         
 
