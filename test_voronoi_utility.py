@@ -192,7 +192,7 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         self.cartesian_coord_array = voronoi_utility.generate_random_array_spherical_generators(5000,1.0,self.prng)
         #and similarly for a generator data set using a much larger sphere radius:
         self.prng_2 = numpy.random.RandomState(556)
-        self.large_sphere_radius = 2.0 
+        self.large_sphere_radius = 87.0
         self.cartesian_coord_array_large_radius = voronoi_utility.generate_random_array_spherical_generators(5000,self.large_sphere_radius,self.prng_2) 
 
         self.spherical_triangle_coordinate_array = numpy.array([[0,0,1],[0,1,0],[1,0,0]]) #3 points on a unit sphere
@@ -322,6 +322,29 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         theoretical_surface_area = 5.0 #rectangle of length 5 and width 1
         test_surface_area = voronoi_utility.calculate_surface_area_of_planar_polygon_in_3D_space(planar_polygon_vertex_array)
         self.assertEqual(test_surface_area,theoretical_surface_area)
+
+
+class Test_haversine_code(unittest.TestCase):
+    
+    def setUp(self):
+        self.coordinates_on_sphere_1 = numpy.array([[0,0,1],[1,0,0]])
+        self.distance_on_sphere_1 = math.pi / 2.
+        self.coordinates_on_sphere_2 = numpy.array([[0,0,87.0],[87.0,0,0]]) #sphere of larger radius
+        self.distance_on_sphere_2 = (math.pi / 2.) * 87.0
+
+    def tearDown(self):
+        del self.coordinates_on_sphere_1
+        del self.distance_on_sphere_1
+
+    def simple_test_haversine_distance(self):
+        '''A simple unit test of the haversine distance formula for two points on the unit sphere.'''
+        calculated_spherical_distance = voronoi_utility.calculate_haversine_distance_between_spherical_points(self.coordinates_on_sphere_1[0],self.coordinates_on_sphere_1[1],1.0)
+        numpy.testing.assert_almost_equal(calculated_spherical_distance,self.distance_on_sphere_1,decimal=6)
+
+    def simple_test_haversine_distance_larger_sphere(self):
+        '''A simple unit test of the haversine distance formula for two points on a larger sphere.'''
+        calculated_spherical_distance = voronoi_utility.calculate_haversine_distance_between_spherical_points(self.coordinates_on_sphere_2[0],self.coordinates_on_sphere_2[1],87.0)
+        numpy.testing.assert_almost_equal(calculated_spherical_distance,self.distance_on_sphere_2,decimal=6)
 
 
 

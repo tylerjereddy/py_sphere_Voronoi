@@ -16,6 +16,17 @@ import pandas
 import math
 import numpy.random
 
+def calculate_haversine_distance_between_spherical_points(cartesian_array_1,cartesian_array_2,sphere_radius):
+    '''Calculate the haversine-based distance between two points on the surface of a sphere. Should be more accurate than the arc cosine strategy. See, for example: http://en.wikipedia.org/wiki/Haversine_formula'''
+    spherical_array_1 = convert_cartesian_array_to_spherical_array(cartesian_array_1)
+    spherical_array_2 = convert_cartesian_array_to_spherical_array(cartesian_array_2)
+    lambda_1 = spherical_array_1[1]
+    lambda_2 = spherical_array_2[1]
+    phi_1 = spherical_array_1[2]
+    phi_2 = spherical_array_2[2]
+    spherical_distance = 2.0 * sphere_radius * math.asin(math.sqrt( ((1 - math.cos(phi_2-phi_1))/2.) + math.cos(phi_1) * math.cos(phi_2) * ( (1 - math.cos(lambda_2-lambda_1))/2.)  ))
+    return spherical_distance
+    
 def generate_random_array_spherical_generators(num_generators,sphere_radius,prng_object):
     '''Generate and return an array of shape (num_generators,3) random points on a sphere of given radius.
     Based on: Muller, M. E. "A Note on a Method for Generating Points Uniformly on N-Dimensional Spheres." Comm. Assoc. Comput. Mach. 2, 19-20, Apr. 1959.
@@ -109,11 +120,11 @@ def calculate_surface_area_of_a_spherical_Voronoi_polygon(array_ordered_Voronoi_
 
 def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius):
     '''Takes an array of ordered Voronoi polygon vertices (for a single generator) and calculates the sum of the inner angles on the sphere surface. The resulting value is theta in the equation provided here: http://mathworld.wolfram.com/SphericalPolygon.html '''
-    if sphere_radius != 1.0:
+    #if sphere_radius != 1.0:
         #try to deal with non-unit circles by temporarily normalizing the data to radius 1:
-        spherical_polar_polygon_vertices = convert_cartesian_array_to_spherical_array(array_ordered_Voronoi_polygon_vertices)
-        spherical_polar_polygon_vertices[...,0] = 1.0
-        array_ordered_Voronoi_polygon_vertices = convert_spherical_array_to_cartesian_array(spherical_polar_polygon_vertices)
+        #spherical_polar_polygon_vertices = convert_cartesian_array_to_spherical_array(array_ordered_Voronoi_polygon_vertices)
+        #spherical_polar_polygon_vertices[...,0] = 1.0
+        #array_ordered_Voronoi_polygon_vertices = convert_spherical_array_to_cartesian_array(spherical_polar_polygon_vertices)
 
     num_vertices_in_Voronoi_polygon = array_ordered_Voronoi_polygon_vertices.shape[0] #the number of rows == number of vertices in polygon
     #two edges (great circle arcs actually) per vertex are needed to calculate tangent vectors / inner angle at that vertex
@@ -133,11 +144,19 @@ def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_order
         current_vertex = array_ordered_Voronoi_polygon_vertices[current_vertex_index] 
         previous_vertex = array_ordered_Voronoi_polygon_vertices[previous_vertex_index]
         next_vertex = array_ordered_Voronoi_polygon_vertices[next_vertex_index] 
+        #print 'angle calc vertex coords:', [convert_cartesian_array_to_spherical_array(vertex) for vertex in [current_vertex,previous_vertex,next_vertex]]
         #produce a,b,c for law of cosines using spherical distance (http://mathworld.wolfram.com/SphericalDistance.html)
-        a = math.acos(numpy.dot(current_vertex,next_vertex))
-        b = math.acos(numpy.dot(next_vertex,previous_vertex))
-        c = math.acos(numpy.dot(previous_vertex,current_vertex))
-        current_vertex_inner_angle_on_sphere_surface = math.acos((math.cos(b) - math.cos(a)*math.cos(c)) / (math.sin(a)*math.sin(c)))
+        old_a = math.acos(numpy.dot(current_vertex,next_vertex))
+        old_b = math.acos(numpy.dot(next_vertex,previous_vertex))
+        old_c = math.acos(numpy.dot(previous_vertex,current_vertex))
+        #print 'law of cosines a,b,c:', old_a,old_b,old_c
+        a = calculate_haversine_distance_between_spherical_points(current_vertex,next_vertex,sphere_radius)
+        b = calculate_haversine_distance_between_spherical_points(next_vertex,previous_vertex,sphere_radius)
+        c = calculate_haversine_distance_between_spherical_points(previous_vertex,current_vertex,sphere_radius)
+        #print 'law of haversines a,b,c:', a,b,c
+        pre_acos_term = (math.cos(b) - math.cos(a)*math.cos(c)) / (math.sin(a)*math.sin(c))
+        #print 'pre_acos_term:', pre_acos_term
+        current_vertex_inner_angle_on_sphere_surface = math.acos(pre_acos_term)
 
         list_Voronoi_poygon_angles_radians.append(current_vertex_inner_angle_on_sphere_surface)
 
@@ -196,13 +215,16 @@ def produce_array_Voronoi_vertices_on_sphere_surface(facet_coordinate_array_Dela
 
         #try to ensure that facet normal faces the correct direction (i.e., out of sphere)
         triangle_centroid = numpy.average(triangle_coord_array,axis=0)
+        #normalize the triangle_centroid to unit sphere distance for the purposes of the following directionality check
+        triangle_centroid_spherical_coords = convert_cartesian_array_to_spherical_array(triangle_centroid)
+        triangle_centroid_spherical_coords[0] = 1.0
+        triangle_centroid = convert_spherical_array_to_cartesian_array(triangle_centroid_spherical_coords)
         #the Euclidean distance between the triangle centroid and the facet normal should be smaller than the sphere centroid to facet normal distance, otherwise, need to invert the vector
         triangle_to_normal_distance = scipy.spatial.distance.euclidean(triangle_centroid,facet_normal_unit_vector)
         sphere_centroid_to_normal_distance = scipy.spatial.distance.euclidean(sphere_centroid,facet_normal_unit_vector)
         delta_value = sphere_centroid_to_normal_distance - triangle_to_normal_distance
         if delta_value < -0.1: #need to rotate the vector so that it faces out of the circle
-            #print 'delta_value:', delta_value
-            facet_normal_unit_vector *= -1 #I seem to get a fair number of degenerate / duplicate Voronoi vertices (is this ok?! will have to filter them out I think ?!)
+            facet_normal_unit_vector *= -1 
         list_triangle_facet_normals.append(facet_normal_unit_vector)
 
     array_facet_normals = numpy.array(list_triangle_facet_normals) * sphere_radius #adjust for radius of sphere
@@ -324,7 +346,7 @@ class Voronoi_Sphere_Surface:
             self.original_point_array = points - sphere_center_origin_offset_vector #translate generator data such that sphere center is at origin
         else:
             self.original_point_array = points
-        self.sphere_centroid = numpy.average(self.original_point_array,axis=0)
+        self.sphere_centroid = numpy.zeros((3,)) #already at origin, or has been moved to origin
         if not sphere_radius:
             self.estimated_sphere_radius = numpy.average(scipy.spatial.distance.cdist(self.original_point_array,self.sphere_centroid[numpy.newaxis,:]))
         else: 
@@ -338,9 +360,13 @@ class Voronoi_Sphere_Surface:
 
     def voronoi_region_vertices_spherical_surface(self):
         '''Returns a dictionary with the sorted (non-intersecting) polygon vertices for the Voronoi regions associated with each generator (original data point) index. A dictionary entry would be structured as follows: `{generator_index : array_polygon_vertices, ...}`.'''
+        print '---------------------'
+        print 'Producing Voronoi Diagram'
         #generate the array of Voronoi vertices:
         facet_coordinate_array_Delaunay_triangulation = produce_triangle_vertex_coordinate_array_Delaunay_sphere(self.hull_instance)
         array_Voronoi_vertices = produce_array_Voronoi_vertices_on_sphere_surface(facet_coordinate_array_Delaunay_triangulation,self.estimated_sphere_radius,self.sphere_centroid)
+        #print 'array_Voronoi_vertices:', array_Voronoi_vertices
+        #print 'array_Voronoi_vertices.shape:', array_Voronoi_vertices.shape
         assert facet_coordinate_array_Delaunay_triangulation.shape[0] == array_Voronoi_vertices.shape[0], "The number of Delaunay triangles should match the number of Voronoi vertices."
         #now, the tricky part--building up a useful Voronoi polygon data structure
 
@@ -350,9 +376,11 @@ class Voronoi_Sphere_Surface:
         #if we iterate through each of the rows and determine the indices of the minimum distances, we obtain the indices of the generators for which that voronoi vertex is a polygon vertex 
         generator_Voronoi_region_dictionary = {} #store the indices of the generators for which a given Voronoi vertex is also a polygon vertex
         for Voronoi_point_index, Voronoi_point_distance_array in enumerate(distance_matrix_Voronoi_vertices_to_generators):
-            Voronoi_point_distance_array = numpy.around(Voronoi_point_distance_array,decimals=10)
+            Voronoi_point_distance_array = numpy.around(Voronoi_point_distance_array,decimals=6)
             indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex = numpy.where(Voronoi_point_distance_array == Voronoi_point_distance_array.min())[0]
-            assert indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex.size >= 3, "By definition, a Voronoi vertex must be equidistant to at least 3 generators."
+            #print 'Voronoi_point_index:', Voronoi_point_index
+            #print '5 closest distances:', numpy.sort(Voronoi_point_distance_array)[0:5]
+            assert indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex.size >= 3, "By definition, a Voronoi vertex must be equidistant to at least 3 generators, but in this case only got {num_gens} generators for Voronoi vertex at {coords}, which has 5 closest distances: {distances}.".format(num_gens=indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex.size,coords=array_Voronoi_vertices[Voronoi_point_index],distances=numpy.sort(Voronoi_point_distance_array)[0:5])
             generator_Voronoi_region_dictionary[Voronoi_point_index] = indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex #so dictionary looks like 0: array(12,17,27), ...
 
         #now, go through the above dictionary and collect the Voronoi point indices forming the polygon for each generator index
