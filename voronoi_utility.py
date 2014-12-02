@@ -74,7 +74,7 @@ def filter_polygon_vertex_coordinates_for_extreme_proximity(array_ordered_Vorono
                     associated_vertex_index = column
                     new_vertex_at_midpoint = ( array_ordered_Voronoi_polygon_vertices[row] + array_ordered_Voronoi_polygon_vertices[column] ) / 2.0
                     spherical_polar_coords_new_vertex = convert_cartesian_array_to_spherical_array(new_vertex_at_midpoint)
-                    spherical_polar_coords_new_vertex[0] = 1.0 #project back to surface of sphere
+                    spherical_polar_coords_new_vertex[0] = sphere_radius #project back to surface of sphere
                     new_vertex_at_midpoint = convert_spherical_array_to_cartesian_array(spherical_polar_coords_new_vertex)
                     array_ordered_Voronoi_polygon_vertices[row] = new_vertex_at_midpoint
                     array_ordered_Voronoi_polygon_vertices = numpy.delete(array_ordered_Voronoi_polygon_vertices,column,0)
@@ -124,6 +124,7 @@ def calculate_surface_area_of_planar_polygon_in_3D_space(array_ordered_Voronoi_p
 
 def calculate_surface_area_of_a_spherical_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius):
     '''Calculate the surface area of a polygon on the surface of a sphere. Based on equation provided here: http://mathworld.wolfram.com/SphericalPolygon.html'''
+    spherical_array_Voronoi_polygon_vertices_before_filtering = convert_cartesian_array_to_spherical_array(array_ordered_Voronoi_polygon_vertices)
     array_ordered_Voronoi_polygon_vertices = filter_polygon_vertex_coordinates_for_extreme_proximity(array_ordered_Voronoi_polygon_vertices,sphere_radius) #filter vertices for extreme proximity
     theta = calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius)
     n = array_ordered_Voronoi_polygon_vertices.shape[0]
@@ -141,6 +142,14 @@ def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_order
         #array_ordered_Voronoi_polygon_vertices = convert_spherical_array_to_cartesian_array(spherical_polar_polygon_vertices)
 
     num_vertices_in_Voronoi_polygon = array_ordered_Voronoi_polygon_vertices.shape[0] #the number of rows == number of vertices in polygon
+
+    #some debugging here -- I'm concerned that some sphere radii are demonstrating faulty projection of coordinates (some have r = 1, while others have r = sphere_radius -- see workflowy for more detailed notes)
+    spherical_polar_polygon_vertices = convert_cartesian_array_to_spherical_array(array_ordered_Voronoi_polygon_vertices)
+    min_vertex_radius = spherical_polar_polygon_vertices[...,0].min()
+    #print 'before array projection check'
+    assert sphere_radius - min_vertex_radius < 0.1, "The minimum projected Voronoi vertex r value should match the sphere_radius of {sphere_radius}, but got {r_min}.".format(sphere_radius=sphere_radius,r_min=min_vertex_radius)
+    #print 'after array projection check'
+
     #two edges (great circle arcs actually) per vertex are needed to calculate tangent vectors / inner angle at that vertex
     current_vertex_index = 0
     list_Voronoi_poygon_angles_radians = []
@@ -158,7 +167,6 @@ def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_order
         current_vertex = array_ordered_Voronoi_polygon_vertices[current_vertex_index] 
         previous_vertex = array_ordered_Voronoi_polygon_vertices[previous_vertex_index]
         next_vertex = array_ordered_Voronoi_polygon_vertices[next_vertex_index] 
-        #print 'angle calc vertex coords:', [convert_cartesian_array_to_spherical_array(vertex) for vertex in [current_vertex,previous_vertex,next_vertex]]
         #produce a,b,c for law of cosines using spherical distance (http://mathworld.wolfram.com/SphericalDistance.html)
         #old_a = math.acos(numpy.dot(current_vertex,next_vertex))
         #old_b = math.acos(numpy.dot(next_vertex,previous_vertex))
@@ -171,10 +179,13 @@ def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_order
         b = calculate_Vincenty_distance_between_spherical_points(next_vertex,previous_vertex,sphere_radius)
         c = calculate_Vincenty_distance_between_spherical_points(previous_vertex,current_vertex,sphere_radius)
         #print 'law of haversines a,b,c:', a,b,c
+        #print 'Vincenty edge lengths a,b,c:', a,b,c
         pre_acos_term = (math.cos(b) - math.cos(a)*math.cos(c)) / (math.sin(a)*math.sin(c))
         if abs(pre_acos_term) > 1.0:
-            break
-        #print 'pre_acos_term:', pre_acos_term
+            print 'angle calc vertex coords (giving acos violation):', [convert_cartesian_array_to_spherical_array(vertex) for vertex in [current_vertex,previous_vertex,next_vertex]]
+            print 'Vincenty edge lengths (giving acos violation) a,b,c:', a,b,c
+            print 'pre_acos_term:', pre_acos_term
+            #break
         current_vertex_inner_angle_on_sphere_surface = math.acos(pre_acos_term)
 
         list_Voronoi_poygon_angles_radians.append(current_vertex_inner_angle_on_sphere_surface)
@@ -382,8 +393,8 @@ class Voronoi_Sphere_Surface:
 
     def voronoi_region_vertices_spherical_surface(self):
         '''Returns a dictionary with the sorted (non-intersecting) polygon vertices for the Voronoi regions associated with each generator (original data point) index. A dictionary entry would be structured as follows: `{generator_index : array_polygon_vertices, ...}`.'''
-        print '---------------------'
-        print 'Producing Voronoi Diagram'
+        #print '---------------------'
+        #print 'Producing Voronoi Diagram'
         #generate the array of Voronoi vertices:
         facet_coordinate_array_Delaunay_triangulation = produce_triangle_vertex_coordinate_array_Delaunay_sphere(self.hull_instance)
         array_Voronoi_vertices = produce_array_Voronoi_vertices_on_sphere_surface(facet_coordinate_array_Delaunay_triangulation,self.estimated_sphere_radius,self.sphere_centroid)
