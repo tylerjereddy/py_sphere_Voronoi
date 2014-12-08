@@ -126,9 +126,10 @@ def calculate_surface_area_of_a_spherical_Voronoi_polygon(array_ordered_Voronoi_
     '''Calculate the surface area of a polygon on the surface of a sphere. Based on equation provided here: http://mathworld.wolfram.com/SphericalPolygon.html'''
     spherical_array_Voronoi_polygon_vertices_before_filtering = convert_cartesian_array_to_spherical_array(array_ordered_Voronoi_polygon_vertices)
     array_ordered_Voronoi_polygon_vertices = filter_polygon_vertex_coordinates_for_extreme_proximity(array_ordered_Voronoi_polygon_vertices,sphere_radius) #filter vertices for extreme proximity
-    theta = calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius)
+    #theta = calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius) #suppressing this calculation while I test the pure-planar SA calculation approach
     n = array_ordered_Voronoi_polygon_vertices.shape[0]
-    surface_area_Voronoi_polygon_on_sphere_surface = (theta - ((n - 2) * math.pi)) * (sphere_radius ** 2)
+    #surface_area_Voronoi_polygon_on_sphere_surface = (theta - ((n - 2) * math.pi)) * (sphere_radius ** 2) #commenting the spherical SA code to test a pure planar algorithm approach
+    surface_area_Voronoi_polygon_on_sphere_surface = calculate_surface_area_of_planar_polygon_in_3D_space(array_ordered_Voronoi_polygon_vertices) #just use planar area as estimate, which may be quite appropriate with many of the failure /edge cases in any case
     if surface_area_Voronoi_polygon_on_sphere_surface <= 0: #the spherical polygon surface area could not be calculated properly (in the limit of large numbers of vertices and when vertices that are nearly co-planar are present this seems to be a problem)
         surface_area_Voronoi_polygon_on_sphere_surface = calculate_surface_area_of_planar_polygon_in_3D_space(array_ordered_Voronoi_polygon_vertices) #just use planar area as estimate, which may be quite appropriate with many of the failure /edge cases in any case
     return surface_area_Voronoi_polygon_on_sphere_surface
@@ -280,6 +281,8 @@ class Voronoi_Sphere_Surface:
     
     Notes
     -----
+
+    Note that, at the moment, the code is using a pure planar surface area calculation instead of performing the spherical surface area calculation described below. This is because of the buggy behaviour of the spherical polygon surface area code and the generally more robust performance of the planar code for a wide variety of test cases. The accuracy of the planar surface area calculations will depend on the density of generators -- a high density should generally perform much better than a low density. Basically, it will be important to monitor the extent of reconstitution for specific cases when using the code in its current state.
 
     The algorithm depends on the important realization that the convex hull of the generators on the sphere surface is equivalent to the Delaunay triangulation [Caroli]_. The Delaunay facet normals are then equivalent to the Voronoi vertices on the surface of the sphere [Fortune]_. The fact that each Voronoi vertex is equidistant to at least three generators can be used to build an appropriate data structure associating Voronoi vertices with their contained generator.
 
