@@ -241,12 +241,13 @@ def produce_array_Voronoi_vertices_on_sphere_surface(facet_coordinate_array_Dela
     '''Return shape (N,3) array of coordinates for the vertices of the Voronoi diagram on the sphere surface given a shape (N,3,3) array of Delaunay triangulation vertices.'''
     assert facet_coordinate_array_Delaunay_triangulation.shape[1:] == (3,3), "facet_coordinate_array_Delaunay_triangulation should have shape (N,3,3)."
     #calculate the surface normal of each triangle as the vector cross product of two edges
-    list_triangle_facet_normals = []
+    #preallocate triangle_facet_normals array in attempt to improve performance over list appending
+    array_facet_normals = numpy.zeros((facet_coordinate_array_Delaunay_triangulation.shape[0],3))
+    triangle_count = 0
     for triangle_coord_array in facet_coordinate_array_Delaunay_triangulation:
         facet_normal = numpy.cross(triangle_coord_array[1] - triangle_coord_array[0],triangle_coord_array[2] - triangle_coord_array[0]) 
         facet_normal_magnitude = numpy.linalg.norm(facet_normal) #length of surface normal
         facet_normal_unit_vector = facet_normal / facet_normal_magnitude #vector of length 1 in same direction
-
         #try to ensure that facet normal faces the correct direction (i.e., out of sphere)
         triangle_centroid = numpy.average(triangle_coord_array,axis=0)
         #normalize the triangle_centroid to unit sphere distance for the purposes of the following directionality check
@@ -259,9 +260,11 @@ def produce_array_Voronoi_vertices_on_sphere_surface(facet_coordinate_array_Dela
         delta_value = sphere_centroid_to_normal_distance - triangle_to_normal_distance
         if delta_value < -0.1: #need to rotate the vector so that it faces out of the circle
             facet_normal_unit_vector *= -1 
-        list_triangle_facet_normals.append(facet_normal_unit_vector)
+        #list_triangle_facet_normals.append(facet_normal_unit_vector)
+        array_facet_normals[triangle_count,...] = facet_normal_unit_vector
+        triangle_count += 1
 
-    array_facet_normals = numpy.array(list_triangle_facet_normals) * sphere_radius #adjust for radius of sphere
+    array_facet_normals *= sphere_radius #adjust for radius of sphere
     array_Voronoi_vertices = array_facet_normals
     assert array_Voronoi_vertices.shape[1] == 3, "The array of Voronoi vertices on the sphere should have shape (N,3)."
     return array_Voronoi_vertices
@@ -412,7 +415,7 @@ class Voronoi_Sphere_Surface:
         #if we iterate through each of the rows and determine the indices of the minimum distances, we obtain the indices of the generators for which that voronoi vertex is a polygon vertex 
         generator_Voronoi_region_dictionary = {} #store the indices of the generators for which a given Voronoi vertex is also a polygon vertex
         for Voronoi_point_index, Voronoi_point_distance_array in enumerate(distance_matrix_Voronoi_vertices_to_generators):
-            Voronoi_point_distance_array = numpy.around(Voronoi_point_distance_array,decimals=6)
+            Voronoi_point_distance_array = numpy.around(Voronoi_point_distance_array,decimals=3)
             indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex = numpy.where(Voronoi_point_distance_array == Voronoi_point_distance_array.min())[0]
             #print 'Voronoi_point_index:', Voronoi_point_index
             #print '5 closest distances:', numpy.sort(Voronoi_point_distance_array)[0:5]
