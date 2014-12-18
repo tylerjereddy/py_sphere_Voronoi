@@ -240,32 +240,23 @@ def produce_triangle_vertex_coordinate_array_Delaunay_sphere(hull_instance):
 def produce_array_Voronoi_vertices_on_sphere_surface(facet_coordinate_array_Delaunay_triangulation,sphere_radius,sphere_centroid):
     '''Return shape (N,3) array of coordinates for the vertices of the Voronoi diagram on the sphere surface given a shape (N,3,3) array of Delaunay triangulation vertices.'''
     assert facet_coordinate_array_Delaunay_triangulation.shape[1:] == (3,3), "facet_coordinate_array_Delaunay_triangulation should have shape (N,3,3)."
-    #calculate the surface normal of each triangle as the vector cross product of two edges
-    #preallocate triangle_facet_normals array in attempt to improve performance over list appending
-    array_facet_normals = numpy.zeros((facet_coordinate_array_Delaunay_triangulation.shape[0],3))
-    triangle_count = 0
-    for triangle_coord_array in facet_coordinate_array_Delaunay_triangulation:
-        facet_normal = numpy.cross(triangle_coord_array[1] - triangle_coord_array[0],triangle_coord_array[2] - triangle_coord_array[0]) 
-        facet_normal_magnitude = numpy.linalg.norm(facet_normal) #length of surface normal
-        facet_normal_unit_vector = facet_normal / facet_normal_magnitude #vector of length 1 in same direction
-        #try to ensure that facet normal faces the correct direction (i.e., out of sphere)
-        triangle_centroid = numpy.average(triangle_coord_array,axis=0)
-        #normalize the triangle_centroid to unit sphere distance for the purposes of the following directionality check
-        triangle_centroid_spherical_coords = convert_cartesian_array_to_spherical_array(triangle_centroid)
-        triangle_centroid_spherical_coords[0] = 1.0
-        triangle_centroid = convert_spherical_array_to_cartesian_array(triangle_centroid_spherical_coords)
-        #the Euclidean distance between the triangle centroid and the facet normal should be smaller than the sphere centroid to facet normal distance, otherwise, need to invert the vector
-        triangle_to_normal_distance = scipy.spatial.distance.euclidean(triangle_centroid,facet_normal_unit_vector)
-        sphere_centroid_to_normal_distance = scipy.spatial.distance.euclidean(sphere_centroid,facet_normal_unit_vector)
-        delta_value = sphere_centroid_to_normal_distance - triangle_to_normal_distance
-        if delta_value < -0.1: #need to rotate the vector so that it faces out of the circle
-            facet_normal_unit_vector *= -1 
-        #list_triangle_facet_normals.append(facet_normal_unit_vector)
-        array_facet_normals[triangle_count,...] = facet_normal_unit_vector
-        triangle_count += 1
-
-    array_facet_normals *= sphere_radius #adjust for radius of sphere
-    array_Voronoi_vertices = array_facet_normals
+    #draft numpy vectorized workflow to avoid Python for loop
+    facet_normals_array = numpy.cross(facet_coordinate_array_Delaunay_triangulation[...,1,...] - facet_coordinate_array_Delaunay_triangulation[...,0,...],facet_coordinate_array_Delaunay_triangulation[...,2,...] - facet_coordinate_array_Delaunay_triangulation[...,0,...])
+    facet_normal_magnitudes = numpy.linalg.norm(facet_normals_array,axis=1)
+    facet_normal_unit_vector_array = facet_normals_array / numpy.column_stack((facet_normal_magnitudes,facet_normal_magnitudes,facet_normal_magnitudes))
+    #try to ensure that facet normal faces the correct direction (i.e., out of sphere)
+    triangle_centroid_array = numpy.average(facet_coordinate_array_Delaunay_triangulation,axis=1)
+    #normalize the triangle_centroid to unit sphere distance for the purposes of the following directionality check
+    array_triangle_centroid_spherical_coords = convert_cartesian_array_to_spherical_array(triangle_centroid_array)
+    array_triangle_centroid_spherical_coords[...,0] = 1.0
+    triangle_centroid_array = convert_spherical_array_to_cartesian_array(array_triangle_centroid_spherical_coords)
+    #the Euclidean distance between the triangle centroid and the facet normal should be smaller than the sphere centroid to facet normal distance, otherwise, need to invert the vector
+    triangle_to_normal_distance_array = numpy.linalg.norm(triangle_centroid_array - facet_normal_unit_vector_array,axis=1)
+    sphere_centroid_to_normal_distance_array = numpy.linalg.norm(sphere_centroid-facet_normal_unit_vector_array,axis=1)
+    delta_value_array = sphere_centroid_to_normal_distance_array - triangle_to_normal_distance_array
+    facet_normal_unit_vector_array[delta_value_array < -0.1] *= -1.0 #need to rotate the vector so that it faces out of the circle 
+    facet_normal_unit_vector_array *= sphere_radius #adjust for radius of sphere
+    array_Voronoi_vertices = facet_normal_unit_vector_array
     assert array_Voronoi_vertices.shape[1] == 3, "The array of Voronoi vertices on the sphere should have shape (N,3)."
     return array_Voronoi_vertices
 
