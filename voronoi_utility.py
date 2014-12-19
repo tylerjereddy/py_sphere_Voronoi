@@ -124,7 +124,6 @@ def calculate_surface_area_of_planar_polygon_in_3D_space(array_ordered_Voronoi_p
 
 def calculate_surface_area_of_a_spherical_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius):
     '''Calculate the surface area of a polygon on the surface of a sphere. Based on equation provided here: http://mathworld.wolfram.com/SphericalPolygon.html'''
-    spherical_array_Voronoi_polygon_vertices_before_filtering = convert_cartesian_array_to_spherical_array(array_ordered_Voronoi_polygon_vertices)
     array_ordered_Voronoi_polygon_vertices = filter_polygon_vertex_coordinates_for_extreme_proximity(array_ordered_Voronoi_polygon_vertices,sphere_radius) #filter vertices for extreme proximity
     #theta = calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius) #suppressing this calculation while I test the pure-planar SA calculation approach
     n = array_ordered_Voronoi_polygon_vertices.shape[0]
@@ -389,52 +388,34 @@ class Voronoi_Sphere_Surface:
         return array_points_vertices_Delaunay_triangulation
 
     def voronoi_region_vertices_spherical_surface(self):
-        '''Returns a dictionary with the sorted (non-intersecting) polygon vertices for the Voronoi regions associated with each generator (original data point) index. A dictionary entry would be structured as follows: `{generator_index : array_polygon_vertices, ...}`.'''
-        #print '---------------------'
-        #print 'Producing Voronoi Diagram'
+        '''Returns a dictionary with the sorted (non-intersecting) polygon vertices for the Voronoi regions associated with each generator (original data point) index. A dictionary entry would be structured as follows: `{generator_index : array_polygon_vertices, ...}`. Now modifying the function to return a numpy array of indices instead -- to improve performance, reduce memory usage, etc.'''
         #generate the array of Voronoi vertices:
         facet_coordinate_array_Delaunay_triangulation = produce_triangle_vertex_coordinate_array_Delaunay_sphere(self.hull_instance)
         array_Voronoi_vertices = produce_array_Voronoi_vertices_on_sphere_surface(facet_coordinate_array_Delaunay_triangulation,self.estimated_sphere_radius,self.sphere_centroid)
-        #print 'array_Voronoi_vertices:', array_Voronoi_vertices
-        #print 'array_Voronoi_vertices.shape:', array_Voronoi_vertices.shape
         assert facet_coordinate_array_Delaunay_triangulation.shape[0] == array_Voronoi_vertices.shape[0], "The number of Delaunay triangles should match the number of Voronoi vertices."
         #now, the tricky part--building up a useful Voronoi polygon data structure
-
-        #new strategy--I already have the Voronoi vertices and the generators, so work based off a distance matrix between them
-        distance_matrix_Voronoi_vertices_to_generators = scipy.spatial.distance.cdist(array_Voronoi_vertices,self.original_point_array)
-        #now, each row of the above distance array corresponds to a single Voronoi vertex, which each column of that row representing the distance to the respective generator point
-        #if we iterate through each of the rows and determine the indices of the minimum distances, we obtain the indices of the generators for which that voronoi vertex is a polygon vertex 
-        generator_Voronoi_region_dictionary = {} #store the indices of the generators for which a given Voronoi vertex is also a polygon vertex
-        for Voronoi_point_index, Voronoi_point_distance_array in enumerate(distance_matrix_Voronoi_vertices_to_generators):
-            Voronoi_point_distance_array = numpy.around(Voronoi_point_distance_array,decimals=3)
-            indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex = numpy.where(Voronoi_point_distance_array == Voronoi_point_distance_array.min())[0]
-            #print 'Voronoi_point_index:', Voronoi_point_index
-            #print '5 closest distances:', numpy.sort(Voronoi_point_distance_array)[0:5]
-            assert indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex.size >= 3, "By definition, a Voronoi vertex must be equidistant to at least 3 generators, but in this case only got {num_gens} generators for Voronoi vertex at {coords}, which has 5 closest distances: {distances}.".format(num_gens=indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex.size,coords=array_Voronoi_vertices[Voronoi_point_index],distances=numpy.sort(Voronoi_point_distance_array)[0:5])
-            generator_Voronoi_region_dictionary[Voronoi_point_index] = indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex #so dictionary looks like 0: array(12,17,27), ...
-
-        #now, go through the above dictionary and collect the Voronoi point indices forming the polygon for each generator index
-        dictionary_Voronoi_point_indices_for_each_generator = {}
-        for Voronoi_point_index, indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex in generator_Voronoi_region_dictionary.iteritems():
-            for generator_index in indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex:
-                if generator_index in dictionary_Voronoi_point_indices_for_each_generator:
-                    list_Voronoi_indices = dictionary_Voronoi_point_indices_for_each_generator[generator_index] 
-                    list_Voronoi_indices.append(Voronoi_point_index)
-                    dictionary_Voronoi_point_indices_for_each_generator[generator_index] = list_Voronoi_indices
-                else: #initialize the list of Voronoi indices for that generator key
-                    dictionary_Voronoi_point_indices_for_each_generator[generator_index] = [Voronoi_point_index]
-        #so this dictionary should have format: {generator_index: [list_of_Voronoi_indices_forming_polygon_vertices]}
-
-        #now, I want to sort the polygon vertices in a consistent, non-intersecting fashion
+        #testing new code idea -- directly grab the Voronoi indices closest to each generator
+        distance_matrix_generators_to_Voronoi_vertices = numpy.around(scipy.spatial.distance.cdist(self.original_point_array,array_Voronoi_vertices),decimals=3) #too many decimals causes problems in practical test cases 
+        #each Voronoi vertex (column in above distance matrix) should have >= 3 minimum distance values relative to the generators (rows) for which it is a Voronoi cell vertex
+        #so, I want access to the row and column index information for the columnwise minima (then all flagged values for a given row form the set of Voronoi vertices for that generator)
+        minimum_distances_generators_to_Voronoi_vertices = numpy.amin(distance_matrix_generators_to_Voronoi_vertices,axis=0)[:,numpy.newaxis]
+        distance_matrix_indices_for_columnar_minima = numpy.where(distance_matrix_generators_to_Voronoi_vertices.T == minimum_distances_generators_to_Voronoi_vertices)[::-1] #a bit tricky to get columnar indices and then use back on original distance matrix
+        indices_Voronoi_vertices_forming_polygon_around_each_generator = distance_matrix_indices_for_columnar_minima
+        
+        #need to use the indices of the generator_indices to group the corresponding_Voronoi_vertex_indices_forming_Voronoi_cell
         dictionary_sorted_Voronoi_point_coordinates_for_each_generator = {}
-        for generator_index, list_unsorted_Voronoi_region_vertices in dictionary_Voronoi_point_indices_for_each_generator.iteritems():
-            current_array_Voronoi_vertices = array_Voronoi_vertices[list_unsorted_Voronoi_region_vertices]
-            if current_array_Voronoi_vertices.shape[0] > 3:
-                polygon_hull_object = scipy.spatial.ConvexHull(current_array_Voronoi_vertices[...,:2]) #trying to project to 2D for edge ordering, and then restore to 3D after
+        for unique_generator_index in set(indices_Voronoi_vertices_forming_polygon_around_each_generator[0]):
+            indices_of_matching_generator_indices = numpy.where(indices_Voronoi_vertices_forming_polygon_around_each_generator[0] == unique_generator_index) 
+            unsorted_Voronoi_cell_vertex_indices = indices_Voronoi_vertices_forming_polygon_around_each_generator[1][indices_of_matching_generator_indices]
+            unsorted_Voronoi_cell_vertex_coord_array = array_Voronoi_vertices[unsorted_Voronoi_cell_vertex_indices]
+            if unsorted_Voronoi_cell_vertex_coord_array.shape[0] > 3:
+                polygon_hull_object = scipy.spatial.ConvexHull(unsorted_Voronoi_cell_vertex_coord_array[...,:2]) #trying to project to 2D for edge ordering, and then restore to 3D after
                 point_indices_ordered_vertex_array = polygon_hull_object.vertices
-                current_array_Voronoi_vertices = current_array_Voronoi_vertices[point_indices_ordered_vertex_array]
-            assert current_array_Voronoi_vertices.shape[0] >= 3, "All generators should be within Voronoi regions (polygons with at least 3 vertices)."
-            dictionary_sorted_Voronoi_point_coordinates_for_each_generator[generator_index] = current_array_Voronoi_vertices
+                voronoi_indices = unsorted_Voronoi_cell_vertex_indices[point_indices_ordered_vertex_array]
+            else:
+                voronoi_indices = unsorted_Voronoi_cell_vertex_indices #triangle doesn't really need order (I think either direction is fine)
+            assert voronoi_indices.size >= 3, "All generators should be within Voronoi regions (polygons with at least 3 vertices)."
+            dictionary_sorted_Voronoi_point_coordinates_for_each_generator[unique_generator_index] = array_Voronoi_vertices[voronoi_indices]
 
         return dictionary_sorted_Voronoi_point_coordinates_for_each_generator
 
@@ -444,7 +425,7 @@ class Voronoi_Sphere_Surface:
         dictionary_Voronoi_region_surface_areas_for_each_generator = {}
         for generator_index, Voronoi_polygon_sorted_vertex_array in dictionary_sorted_Voronoi_point_coordinates_for_each_generator.iteritems():
             current_Voronoi_polygon_surface_area_on_sphere = calculate_surface_area_of_a_spherical_Voronoi_polygon(Voronoi_polygon_sorted_vertex_array,self.estimated_sphere_radius)
-            assert current_Voronoi_polygon_surface_area_on_sphere > 0, "Obtained a surface area of zero for a Voronoi region."
+            assert current_Voronoi_polygon_surface_area_on_sphere > 0, "Obtained a surface area of zero for a Voronoi region [Actual value = {actual_value}; polygon_vertices = {polygon_vertices}].".format(actual_value = current_Voronoi_polygon_surface_area_on_sphere,polygon_vertices=Voronoi_polygon_sorted_vertex_array)
             dictionary_Voronoi_region_surface_areas_for_each_generator[generator_index] = current_Voronoi_polygon_surface_area_on_sphere
         return dictionary_Voronoi_region_surface_areas_for_each_generator
 
