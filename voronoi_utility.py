@@ -403,19 +403,24 @@ class Voronoi_Sphere_Surface:
         indices_Voronoi_vertices_forming_polygon_around_each_generator = distance_matrix_indices_for_columnar_minima
         
         #need to use the indices of the generator_indices to group the corresponding_Voronoi_vertex_indices_forming_Voronoi_cell
+        #I think pandas GroupBy may be useful here (i.e., to group voronoi vertices by common generator index)
+        d = {'generator_indices':indices_Voronoi_vertices_forming_polygon_around_each_generator[0]}
+        df = pandas.DataFrame(d,index=indices_Voronoi_vertices_forming_polygon_around_each_generator[1])
+        grouped = df.groupby('generator_indices')
+        dictionary_unsorted_Voronoi_point_indices_for_each_generator = grouped.groups
+
         dictionary_sorted_Voronoi_point_coordinates_for_each_generator = {}
-        for unique_generator_index in set(indices_Voronoi_vertices_forming_polygon_around_each_generator[0]):
-            indices_of_matching_generator_indices = numpy.where(indices_Voronoi_vertices_forming_polygon_around_each_generator[0] == unique_generator_index) 
-            unsorted_Voronoi_cell_vertex_indices = indices_Voronoi_vertices_forming_polygon_around_each_generator[1][indices_of_matching_generator_indices]
-            unsorted_Voronoi_cell_vertex_coord_array = array_Voronoi_vertices[unsorted_Voronoi_cell_vertex_indices]
+        for generator_index,unsorted_Voronoi_polygon_indices in dictionary_unsorted_Voronoi_point_indices_for_each_generator.iteritems():
+            unsorted_Voronoi_cell_vertex_coord_array = array_Voronoi_vertices[unsorted_Voronoi_polygon_indices]
             if unsorted_Voronoi_cell_vertex_coord_array.shape[0] > 3:
                 polygon_hull_object = scipy.spatial.ConvexHull(unsorted_Voronoi_cell_vertex_coord_array[...,:2]) #trying to project to 2D for edge ordering, and then restore to 3D after
                 point_indices_ordered_vertex_array = polygon_hull_object.vertices
-                voronoi_indices = unsorted_Voronoi_cell_vertex_indices[point_indices_ordered_vertex_array]
+                voronoi_indices = numpy.array(unsorted_Voronoi_polygon_indices)[point_indices_ordered_vertex_array]
             else:
-                voronoi_indices = unsorted_Voronoi_cell_vertex_indices #triangle doesn't really need order (I think either direction is fine)
+                voronoi_indices = numpy.array(unsorted_Voronoi_polygon_indices) #triangle doesn't really need order (I think either direction is fine)
             assert voronoi_indices.size >= 3, "All generators should be within Voronoi regions (polygons with at least 3 vertices)."
-            dictionary_sorted_Voronoi_point_coordinates_for_each_generator[unique_generator_index] = array_Voronoi_vertices[voronoi_indices]
+            dictionary_unsorted_Voronoi_point_indices_for_each_generator[generator_index] = array_Voronoi_vertices[voronoi_indices]
+        dictionary_sorted_Voronoi_point_coordinates_for_each_generator = dictionary_unsorted_Voronoi_point_indices_for_each_generator
 
         return dictionary_sorted_Voronoi_point_coordinates_for_each_generator
 
