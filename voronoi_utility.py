@@ -387,6 +387,7 @@ class Voronoi_Sphere_Surface:
         array_points_vertices_Delaunay_triangulation = produce_triangle_vertex_coordinate_array_Delaunay_sphere(self.hull_instance)
         return array_points_vertices_Delaunay_triangulation
 
+    @profile
     def voronoi_region_vertices_spherical_surface(self):
         '''Returns a dictionary with the sorted (non-intersecting) polygon vertices for the Voronoi regions associated with each generator (original data point) index. A dictionary entry would be structured as follows: `{generator_index : array_polygon_vertices, ...}`. Now modifying the function to return a numpy array of indices instead -- to improve performance, reduce memory usage, etc.'''
         #generate the array of Voronoi vertices:
@@ -395,11 +396,13 @@ class Voronoi_Sphere_Surface:
         assert facet_coordinate_array_Delaunay_triangulation.shape[0] == array_Voronoi_vertices.shape[0], "The number of Delaunay triangles should match the number of Voronoi vertices."
         #now, the tricky part--building up a useful Voronoi polygon data structure
         #testing new code idea -- directly grab the Voronoi indices closest to each generator
-        distance_matrix_generators_to_Voronoi_vertices = numpy.around(scipy.spatial.distance.cdist(self.original_point_array,array_Voronoi_vertices),decimals=3) #too many decimals causes problems in practical test cases 
+        distance_matrix_generators_to_Voronoi_vertices = scipy.spatial.distance.cdist(self.original_point_array,array_Voronoi_vertices) #too many decimals causes problems in practical test cases 
+        #distance_matrix_generators_to_Voronoi_vertices = numpy.around(distance_matrix_generators_to_Voronoi_vertices,decimals=3) #too many decimals causes problems in practical test cases 
         #each Voronoi vertex (column in above distance matrix) should have >= 3 minimum distance values relative to the generators (rows) for which it is a Voronoi cell vertex
         #so, I want access to the row and column index information for the columnwise minima (then all flagged values for a given row form the set of Voronoi vertices for that generator)
         minimum_distances_generators_to_Voronoi_vertices = numpy.amin(distance_matrix_generators_to_Voronoi_vertices,axis=0)[:,numpy.newaxis]
-        distance_matrix_indices_for_columnar_minima = numpy.where(distance_matrix_generators_to_Voronoi_vertices.T == minimum_distances_generators_to_Voronoi_vertices)[::-1] #a bit tricky to get columnar indices and then use back on original distance matrix
+        #distance_matrix_indices_for_columnar_minima = numpy.where(distance_matrix_generators_to_Voronoi_vertices.T == minimum_distances_generators_to_Voronoi_vertices)[::-1] #a bit tricky to get columnar indices and then use back on original distance matrix
+        distance_matrix_indices_for_columnar_minima = numpy.where(abs(distance_matrix_generators_to_Voronoi_vertices.T - minimum_distances_generators_to_Voronoi_vertices) < 0.001)[::-1] #a bit tricky to get columnar indices and then use back on original distance matrix
         indices_Voronoi_vertices_forming_polygon_around_each_generator = distance_matrix_indices_for_columnar_minima
         
         #need to use the indices of the generator_indices to group the corresponding_Voronoi_vertex_indices_forming_Voronoi_cell
@@ -409,18 +412,20 @@ class Voronoi_Sphere_Surface:
         grouped = df.groupby('generator_indices')
         dictionary_unsorted_Voronoi_point_indices_for_each_generator = grouped.groups
 
+        
+
+
+
         dictionary_sorted_Voronoi_point_coordinates_for_each_generator = {}
         for generator_index,unsorted_Voronoi_polygon_indices in dictionary_unsorted_Voronoi_point_indices_for_each_generator.iteritems():
             unsorted_Voronoi_cell_vertex_coord_array = array_Voronoi_vertices[unsorted_Voronoi_polygon_indices]
-            if unsorted_Voronoi_cell_vertex_coord_array.shape[0] > 3:
-                polygon_hull_object = scipy.spatial.ConvexHull(unsorted_Voronoi_cell_vertex_coord_array[...,:2]) #trying to project to 2D for edge ordering, and then restore to 3D after
-                point_indices_ordered_vertex_array = polygon_hull_object.vertices
-                voronoi_indices = numpy.array(unsorted_Voronoi_polygon_indices)[point_indices_ordered_vertex_array]
-            else:
-                voronoi_indices = numpy.array(unsorted_Voronoi_polygon_indices) #triangle doesn't really need order (I think either direction is fine)
-            assert voronoi_indices.size >= 3, "All generators should be within Voronoi regions (polygons with at least 3 vertices)."
-            dictionary_unsorted_Voronoi_point_indices_for_each_generator[generator_index] = array_Voronoi_vertices[voronoi_indices]
-        dictionary_sorted_Voronoi_point_coordinates_for_each_generator = dictionary_unsorted_Voronoi_point_indices_for_each_generator
+            #average_2D_projection_coordinate = numpy.average(unsorted_Voronoi_cell_vertex_coord_array[...,:2],axis=0)
+            average_2D_projection_coordinate = self.original_point_array[generator_index,:2]
+            translated_2D_projection_coordinates = unsorted_Voronoi_cell_vertex_coord_array[...,:2] - average_2D_projection_coordinate
+            polar_coord_array_unsorted_vertices = numpy.arctan2(translated_2D_projection_coordinates[...,1],translated_2D_projection_coordinates[...,0])
+            array_sort_indices_by_increasing_polar_angle = numpy.argsort(polar_coord_array_unsorted_vertices)
+            assert array_sort_indices_by_increasing_polar_angle.size >= 3, "All generators should be within Voronoi regions (polygons with at least 3 vertices)."
+            dictionary_sorted_Voronoi_point_coordinates_for_each_generator[generator_index] = unsorted_Voronoi_cell_vertex_coord_array[array_sort_indices_by_increasing_polar_angle]
 
         return dictionary_sorted_Voronoi_point_coordinates_for_each_generator
 

@@ -250,7 +250,7 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         dictionary_Voronoi_region_surface_areas_for_each_generator = random_dist_voronoi_instance.voronoi_region_surface_areas_spherical_surface()
         sum_Voronoi_polygon_surface_areas = sum(dictionary_Voronoi_region_surface_areas_for_each_generator.itervalues())
         percent_reconstituted_surface_area = sum_Voronoi_polygon_surface_areas / (math.pi * 4.0 * (self.large_sphere_radius ** 2)) * 100.
-        self.assertGreater(percent_reconstituted_surface_area,99.0,msg='Reconstituted surface area of Voronoi polygons on unit sphere should match theoretical surface area of sphere within 1 %.') 
+        self.assertGreater(percent_reconstituted_surface_area,99.0,msg='Reconstituted surface area of Voronoi polygons on unit sphere should match theoretical surface area of sphere within 1 % but got{percent_reconstituted_surface_area}.'.format(percent_reconstituted_surface_area=percent_reconstituted_surface_area)) 
         self.assertLessEqual(percent_reconstituted_surface_area,100.0,msg='Reconstituted surface area of Voronoi polygons should be less than or equal to 100% of the theoretical surface area of spherebut got {percent} %.'.format(percent=percent_reconstituted_surface_area))
             
     def test_spherical_triangle_surface_area_calculation(self):
