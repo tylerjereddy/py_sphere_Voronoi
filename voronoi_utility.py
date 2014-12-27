@@ -387,7 +387,7 @@ class Voronoi_Sphere_Surface:
         array_points_vertices_Delaunay_triangulation = produce_triangle_vertex_coordinate_array_Delaunay_sphere(self.hull_instance)
         return array_points_vertices_Delaunay_triangulation
 
-    @profile
+    #@profile
     def voronoi_region_vertices_spherical_surface(self):
         '''Returns a dictionary with the sorted (non-intersecting) polygon vertices for the Voronoi regions associated with each generator (original data point) index. A dictionary entry would be structured as follows: `{generator_index : array_polygon_vertices, ...}`. Now modifying the function to return a numpy array of indices instead -- to improve performance, reduce memory usage, etc.'''
         #generate the array of Voronoi vertices:
