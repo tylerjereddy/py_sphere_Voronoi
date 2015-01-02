@@ -7,6 +7,8 @@ The documentation for the project is available here: http://py-sphere-voronoi.re
 
 This project is still in development and some of the algorithm weaknesses are highlighted in the above documentation.
 
+Please cite: [![DOI](https://zenodo.org/badge/6247/tylerjereddy/py_sphere_Voronoi.svg)](http://dx.doi.org/10.5281/zenodo.13688)
+
 For contributions:
   * ensure most/all unit tests pass (run: nosetests)
   * ensure all doctests pass (run: python voronoi_utility.py)
