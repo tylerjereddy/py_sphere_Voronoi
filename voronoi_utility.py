@@ -16,6 +16,47 @@ import pandas
 import math
 import numpy.random
 
+class IntersectionError(Exception):
+    pass
+
+def test_polygon_for_self_intersection(array_ordered_Voronoi_polygon_vertices_2D):
+    '''Test an allegedly properly-ordered numpy array of Voronoi region vertices in 2D for self-intersection of edges based on algorithm described at http://algs4.cs.princeton.edu/91primitives/'''
+    total_vertices = array_ordered_Voronoi_polygon_vertices_2D.shape[0]
+    total_edges = total_vertices
+
+    def intersection_test(a,b,c,d):
+        #code in r & s equations provided on above website, which operate on the 2D coordinates of the edge vertices for edges a - b and c - d
+        #so: a, b, c, d are numpy arrays of vertex coordinates -- presumably with shape (2,)
+        intersection = False
+        denominator = (b[0] - a[0]) * (d[1] - c[1]) - (b[1] - a[1]) * (d[0] - c[0])
+        r = ( (a[1] - c[1]) * (d[0] - c[0]) - (a[0] - c[0]) * (d[1] - c[1]) ) / denominator
+        s = ( (a[1] - c[1]) * (b[0] - a[0]) - (a[0] - c[0]) * (b[1] - a[1]) ) / denominator
+        if (r >= 0 and r <= 1) and (s >= 0 and s <= 1): #conditions for intersection
+            intersection = True
+        if intersection:
+            raise IntersectionError("Voronoi polygon line intersection !")
+
+    #go through and test all possible non-consecutive edge combinations for intersection
+    list_vertex_indices_in_edges = [ [vertex_index, vertex_index + 1] for vertex_index in xrange(total_vertices)]
+    #for the edge starting from the last point in the Voronoi polygon the index of the final point should be switched to the starting index -- to close the polygon
+    filtered_list_vertex_indices_in_edges = []
+    for list_vertex_indices_in_edge in list_vertex_indices_in_edges:
+        if list_vertex_indices_in_edge[1] == total_vertices:
+            filtered_list_vertex_indices_in_edge = [list_vertex_indices_in_edge[0],0]
+        else:
+            filtered_list_vertex_indices_in_edge = list_vertex_indices_in_edge
+        filtered_list_vertex_indices_in_edges.append(filtered_list_vertex_indices_in_edge)
+
+    for edge_index, list_vertex_indices_in_edge in enumerate(filtered_list_vertex_indices_in_edges):
+        for edge_index_2, list_vertex_indices_in_edge_2 in enumerate(filtered_list_vertex_indices_in_edges):
+            if (list_vertex_indices_in_edge[0] not in list_vertex_indices_in_edge_2) and (list_vertex_indices_in_edge[1] not in list_vertex_indices_in_edge_2): #non-consecutive edges
+                a = array_ordered_Voronoi_polygon_vertices_2D[list_vertex_indices_in_edge[0]]
+                b = array_ordered_Voronoi_polygon_vertices_2D[list_vertex_indices_in_edge[1]]
+                c = array_ordered_Voronoi_polygon_vertices_2D[list_vertex_indices_in_edge_2[0]]
+                d = array_ordered_Voronoi_polygon_vertices_2D[list_vertex_indices_in_edge_2[1]]
+                intersection_test(a,b,c,d)
+
+
 def calculate_Vincenty_distance_between_spherical_points(cartesian_array_1,cartesian_array_2,sphere_radius):
     '''Apparently, the special case of the Vincenty formula (http://en.wikipedia.org/wiki/Great-circle_distance) may be the most accurate method for calculating great-circle distances.'''
     spherical_array_1 = convert_cartesian_array_to_spherical_array(cartesian_array_1)
@@ -433,7 +474,15 @@ class Voronoi_Sphere_Surface:
                 polygon_hull_object = scipy.spatial.ConvexHull(current_array_Voronoi_vertices[...,:2]) #trying to project to 2D for edge ordering, and then restore to 3D after
                 point_indices_ordered_vertex_array = polygon_hull_object.vertices
                 current_array_Voronoi_vertices = current_array_Voronoi_vertices[point_indices_ordered_vertex_array]
+                try:
+                    test_polygon_for_self_intersection(current_array_Voronoi_vertices[...,1:]) #debug
+                except IntersectionError: #try to deal with line intersection by swapping violating vertices?
+                    polygon_hull_object = scipy.spatial.ConvexHull(current_array_Voronoi_vertices[...,1:]) #try a different sorting / projection
+                    point_indices_ordered_vertex_array = polygon_hull_object.vertices
+                    current_array_Voronoi_vertices = current_array_Voronoi_vertices[point_indices_ordered_vertex_array]
+                    test_polygon_for_self_intersection(current_array_Voronoi_vertices[...,1:]) #debug: don't catch this exception because it is a real problem (the backup sorting attempt with a different projection)
             assert current_array_Voronoi_vertices.shape[0] >= 3, "All generators should be within Voronoi regions (polygons with at least 3 vertices)."
+
             dictionary_sorted_Voronoi_point_coordinates_for_each_generator[generator_index] = current_array_Voronoi_vertices
 
         return dictionary_sorted_Voronoi_point_coordinates_for_each_generator
