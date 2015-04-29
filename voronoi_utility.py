@@ -15,6 +15,7 @@ import numpy.linalg
 import pandas
 import math
 import numpy.random
+from matplotlib.path import Path
 
 class IntersectionError(Exception):
     pass
@@ -466,22 +467,35 @@ class Voronoi_Sphere_Surface:
                     dictionary_Voronoi_point_indices_for_each_generator[generator_index] = [Voronoi_point_index]
         #so this dictionary should have format: {generator_index: [list_of_Voronoi_indices_forming_polygon_vertices]}
 
+        def sort_voronoi_vertices(current_array_Voronoi_vertices):
+            polygon_hull_object = scipy.spatial.ConvexHull(current_array_Voronoi_vertices[...,:2]) #trying to project to 2D for edge ordering, and then restore to 3D after
+            point_indices_ordered_vertex_array = polygon_hull_object.vertices
+            current_array_Voronoi_vertices = current_array_Voronoi_vertices[point_indices_ordered_vertex_array]
+            try:
+                test_polygon_for_self_intersection(current_array_Voronoi_vertices[...,1:]) #debug
+            except IntersectionError: #try to deal with line intersection by swapping violating vertices?
+                polygon_hull_object = scipy.spatial.ConvexHull(current_array_Voronoi_vertices[...,1:]) #try a different sorting / projection
+                point_indices_ordered_vertex_array = polygon_hull_object.vertices
+                current_array_Voronoi_vertices = current_array_Voronoi_vertices[point_indices_ordered_vertex_array]
+                test_polygon_for_self_intersection(current_array_Voronoi_vertices[...,1:]) #debug: don't catch this exception because it is a real problem (the backup sorting attempt with a different projection)
+            return current_array_Voronoi_vertices
+
         #now, I want to sort the polygon vertices in a consistent, non-intersecting fashion
         dictionary_sorted_Voronoi_point_coordinates_for_each_generator = {}
         for generator_index, list_unsorted_Voronoi_region_vertices in dictionary_Voronoi_point_indices_for_each_generator.iteritems():
             current_array_Voronoi_vertices = array_Voronoi_vertices[list_unsorted_Voronoi_region_vertices]
             if current_array_Voronoi_vertices.shape[0] > 3:
-                polygon_hull_object = scipy.spatial.ConvexHull(current_array_Voronoi_vertices[...,:2]) #trying to project to 2D for edge ordering, and then restore to 3D after
-                point_indices_ordered_vertex_array = polygon_hull_object.vertices
-                current_array_Voronoi_vertices = current_array_Voronoi_vertices[point_indices_ordered_vertex_array]
-                try:
-                    test_polygon_for_self_intersection(current_array_Voronoi_vertices[...,1:]) #debug
-                except IntersectionError: #try to deal with line intersection by swapping violating vertices?
-                    polygon_hull_object = scipy.spatial.ConvexHull(current_array_Voronoi_vertices[...,1:]) #try a different sorting / projection
-                    point_indices_ordered_vertex_array = polygon_hull_object.vertices
-                    current_array_Voronoi_vertices = current_array_Voronoi_vertices[point_indices_ordered_vertex_array]
-                    test_polygon_for_self_intersection(current_array_Voronoi_vertices[...,1:]) #debug: don't catch this exception because it is a real problem (the backup sorting attempt with a different projection)
+                current_array_Voronoi_vertices = sort_voronoi_vertices(current_array_Voronoi_vertices)
             assert current_array_Voronoi_vertices.shape[0] >= 3, "All generators should be within Voronoi regions (polygons with at least 3 vertices)."
+            #check if generator falls outside its assigned Voronoi cell; if it does, add in next closest Voronoi vertex (assuming I don't have any cases with > 1 vertex missing)
+            path = Path(current_array_Voronoi_vertices[...,1:]) #build path from my second 2D projection (seems to work better in my initial tests)
+            vertices_in_path = current_array_Voronoi_vertices.shape[0]
+            if not path.contains_point(self.original_point_array[generator_index][1:]):
+                next_closest_voronoi_vertex_distance = numpy.sort(distance_matrix_Voronoi_vertices_to_generators[...,generator_index])[vertices_in_path]
+                next_closest_voronoi_vertex_index = numpy.argwhere(distance_matrix_Voronoi_vertices_to_generators[...,generator_index] == next_closest_voronoi_vertex_distance)
+                next_closest_voronoi_vertex_coord = array_Voronoi_vertices[next_closest_voronoi_vertex_index][0]
+                current_array_Voronoi_vertices = numpy.concatenate((current_array_Voronoi_vertices,next_closest_voronoi_vertex_coord))
+                current_array_Voronoi_vertices = sort_voronoi_vertices(current_array_Voronoi_vertices)
 
             dictionary_sorted_Voronoi_point_coordinates_for_each_generator[generator_index] = current_array_Voronoi_vertices
 
