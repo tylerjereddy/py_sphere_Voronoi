@@ -265,7 +265,7 @@ def convert_spherical_array_to_cartesian_array(spherical_coord_array,angle_measu
     #now the conversion to Cartesian coords
     cartesian_coord_array[...,0] = spherical_coord_array[...,0] * numpy.cos(spherical_coord_array[...,1]) * numpy.sin(spherical_coord_array[...,2])
     cartesian_coord_array[...,1] = spherical_coord_array[...,0] * numpy.sin(spherical_coord_array[...,1]) * numpy.sin(spherical_coord_array[...,2])
-    cartesian_coord_array[...,2] = spherical_coord_array[...,0] * numpy.cos(spherical_coord_array[...,1])
+    cartesian_coord_array[...,2] = spherical_coord_array[...,0] * numpy.cos(spherical_coord_array[...,2])
     return cartesian_coord_array
 
 def produce_triangle_vertex_coordinate_array_Delaunay_sphere(hull_instance):
