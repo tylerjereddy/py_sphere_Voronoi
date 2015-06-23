@@ -67,7 +67,7 @@ def calculate_Vincenty_distance_between_spherical_points(cartesian_array_1,carte
     phi_2 = spherical_array_2[2]
     delta_lambda = abs(lambda_2 - lambda_1)
     delta_phi = abs(phi_2 - phi_1)
-    radian_angle = math.atan2( math.sqrt( (math.cos(phi_2)*math.sin(delta_lambda))**2 + (math.cos(phi_1)*math.sin(phi_2) - math.sin(phi_1)*math.cos(phi_2)*math.cos(delta_lambda)  )**2 ),  (math.sin(phi_1) * math.sin(phi_2) + math.cos(phi_1) * math.cos(phi_2) * math.cos(delta_lambda) ) )
+    radian_angle = math.atan2( math.sqrt( (math.sin(phi_2)*math.sin(delta_lambda))**2 + (math.sin(phi_1)*math.cos(phi_2) - math.cos(phi_1)*math.sin(phi_2)*math.cos(delta_lambda)  )**2 ),  (math.cos(phi_1) * math.cos(phi_2) + math.sin(phi_1) * math.sin(phi_2) * math.cos(delta_lambda) ) )
     spherical_distance = sphere_radius * radian_angle
     return spherical_distance
 
