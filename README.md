@@ -1,6 +1,8 @@
 Voronoi diagrams on the surface of a Sphere
 ===========================================
 
+Slides from PyData London 2015 presentation about this package: https://www.slideshare.net/slideshow/embed_code/key/1bKCEyHa789nBe
+
 A Python module for obtaining Voronoi diagrams on the surfaces of spheres, including the calculation of Voronoi region surface areas. Applications may range from calculating area per lipid in spherical viruses to geographical parsing.
 
 The documentation for the project is available here: http://py-sphere-voronoi.readthedocs.org/en/latest/voronoi_utility.html
