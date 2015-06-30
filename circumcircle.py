@@ -66,19 +66,6 @@ def calc_circumcenter_3D(triangle_coord_array):
     circumcenter = a + ( (numpy.abs(c-a) ** 2) * numpy.cross(cross_ba_ca,(b-a)) + (numpy.abs(b-a) ** 2) * numpy.cross((c-a),cross_ba_ca) ) / (2 * numpy.abs(cross_ba_ca) ** 2)
     return circumcenter
 
-def calc_circumcenter_circumsphere_tetrahedron(tetrahedron_coord_array):
-    '''Calculate the circumcenter of the circumsphere of a tetrahedron. Based on http://www.cs.berkeley.edu/~jrs/meshpapers/robnotes.pdf and Wikipedia entry for tetrahedral volume
-    Assumes that the last point (d) is the origin of the coordinate system.'''
-    a = tetrahedron_coord_array[0, ...]
-    b = tetrahedron_coord_array[1, ...]
-    c = tetrahedron_coord_array[2, ...]
-    d = tetrahedron_coord_array[3, ...] #this should always be the origin of the coordinate system in my code
-    tetrahedral_volume = numpy.dot(a,numpy.cross(b,c)) / 6.
-    numerator = (numpy.cross((numpy.abs(a - d) ** 2) * (b - d), (c - d)) + numpy.cross((numpy.abs(b-d) ** 2) * (c - d), (a-d)) + numpy.cross((numpy.abs(c - d) ** 2) * (a - d),(b - d))) 
-    circumcenter = numerator / (12. * tetrahedral_volume)
-    print 'tetrahedral_volume:', tetrahedral_volume
-    return circumcenter
-
 def calc_circumcenter_circumsphere_tetrahedron_2(tetrahedron_coord_array):
     '''An alternative implementation based on http://mathworld.wolfram.com/Circumsphere.html because of issues with the initial implementation from the Berkeley page.'''
     determinant_array_first_column = numpy.reshape(numpy.array([numpy.square(vertex_array).sum() for vertex_array in tetrahedron_coord_array]), (4,1))
