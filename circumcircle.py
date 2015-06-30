@@ -74,7 +74,24 @@ def calc_circumcenter_circumsphere_tetrahedron(tetrahedron_coord_array):
     c = tetrahedron_coord_array[2, ...]
     d = tetrahedron_coord_array[3, ...] #this should always be the origin of the coordinate system in my code
     tetrahedral_volume = numpy.dot(a,numpy.cross(b,c)) / 6.
-    circumcenter = (numpy.cross((numpy.abs(a - d) ** 2) * (b - d), (c - d)) + numpy.cross((numpy.abs(b-d) ** 2) * (c - d), (a-d)) + numpy.cross((numpy.abs(c - d) ** 2) * (a - d),(b - d))) / (12 * tetrahedral_volume)
+    numerator = (numpy.cross((numpy.abs(a - d) ** 2) * (b - d), (c - d)) + numpy.cross((numpy.abs(b-d) ** 2) * (c - d), (a-d)) + numpy.cross((numpy.abs(c - d) ** 2) * (a - d),(b - d))) 
+    circumcenter = numerator / (12. * tetrahedral_volume)
+    print 'tetrahedral_volume:', tetrahedral_volume
     return circumcenter
 
+def calc_circumcenter_circumsphere_tetrahedron_2(tetrahedron_coord_array):
+    '''An alternative implementation based on http://mathworld.wolfram.com/Circumsphere.html because of issues with the initial implementation from the Berkeley page.'''
+    determinant_array_first_column = numpy.reshape(numpy.array([numpy.square(vertex_array).sum() for vertex_array in tetrahedron_coord_array]), (4,1))
+    determinant_array_final_column = numpy.ones((4,1))
+    D_x = numpy.linalg.det(numpy.hstack((determinant_array_first_column, tetrahedron_coord_array[...,1:], determinant_array_final_column)))
+    middle_column_array_D_y = numpy.hstack((numpy.reshape(tetrahedron_coord_array[...,0], (4,1)), numpy.reshape(tetrahedron_coord_array[...,2], (4,1))))
+    D_y = - numpy.linalg.det(numpy.hstack((determinant_array_first_column, middle_column_array_D_y, determinant_array_final_column)))
+    D_z = numpy.linalg.det(numpy.hstack((determinant_array_first_column, tetrahedron_coord_array[...,:-1], determinant_array_final_column)))
+    a = numpy.linalg.det(numpy.hstack((tetrahedron_coord_array,determinant_array_final_column)))
+    denominator = 2. * a
+    x_0 = D_x / denominator
+    y_0 = D_y / denominator
+    z_0 = D_z / denominator
+    circumcenter = numpy.array([x_0, y_0, z_0])
+    return circumcenter
 
