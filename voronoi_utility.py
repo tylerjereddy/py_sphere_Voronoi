@@ -16,7 +16,6 @@ import numpy.linalg
 import pandas
 import math
 import numpy.random
-from matplotlib.path import Path
 
 class IntersectionError(Exception):
     pass
