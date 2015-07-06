@@ -9,6 +9,7 @@ try:
 except AttributeError: #handle this for sphinx build process on readthedocs because of module mocking
     pass 
 
+import circumcircle
 import scipy.spatial
 import numpy
 import numpy.linalg
@@ -19,6 +20,16 @@ from matplotlib.path import Path
 
 class IntersectionError(Exception):
     pass
+
+def filter_tetrahedron_to_triangle(current_tetrahedron_coord_array):
+    current_triangle_coord_array = [] #initialize as a list
+    for row in current_tetrahedron_coord_array: #ugly to use for loop for this, but ok for now!
+        if row[0] == 0 and row[1] == 0 and row[2] == 0: #filter out origin row
+            continue
+        else:
+            current_triangle_coord_array.append(row)
+    current_triangle_coord_array = numpy.array(current_triangle_coord_array)
+    return current_triangle_coord_array
 
 def test_polygon_for_self_intersection(array_ordered_Voronoi_polygon_vertices_2D):
     '''Test an allegedly properly-ordered numpy array of Voronoi region vertices in 2D for self-intersection of edges based on algorithm described at http://algs4.cs.princeton.edu/91primitives/'''
@@ -260,7 +271,7 @@ def convert_cartesian_array_to_spherical_array(coord_array,angle_measure='radian
     xy = coord_array[...,0]**2 + coord_array[...,1]**2
     spherical_coord_array[...,0] = numpy.sqrt(xy + coord_array[...,2]**2)
     spherical_coord_array[...,1] = numpy.arctan2(coord_array[...,1], coord_array[...,0])
-    spherical_coord_array[...,2] = numpy.arccos(coord_array[...,2],spherical_coord_array[...,0])
+    spherical_coord_array[...,2] = numpy.arccos(coord_array[...,2] / spherical_coord_array[...,0])
     if angle_measure == 'degrees':
         spherical_coord_array[...,1] = numpy.degrees(spherical_coord_array[...,1])
         spherical_coord_array[...,2] = numpy.degrees(spherical_coord_array[...,2])
@@ -443,73 +454,69 @@ class Voronoi_Sphere_Surface:
 
     def voronoi_region_vertices_spherical_surface(self):
         '''Returns a dictionary with the sorted (non-intersecting) polygon vertices for the Voronoi regions associated with each generator (original data point) index. A dictionary entry would be structured as follows: `{generator_index : array_polygon_vertices, ...}`.'''
-        #print '---------------------'
-        #print 'Producing Voronoi Diagram'
-        #generate the array of Voronoi vertices:
-        facet_coordinate_array_Delaunay_triangulation = produce_triangle_vertex_coordinate_array_Delaunay_sphere(self.hull_instance)
-        array_Voronoi_vertices = produce_array_Voronoi_vertices_on_sphere_surface(facet_coordinate_array_Delaunay_triangulation,self.estimated_sphere_radius,self.sphere_centroid)
-        #print 'array_Voronoi_vertices:', array_Voronoi_vertices
-        #print 'array_Voronoi_vertices.shape:', array_Voronoi_vertices.shape
-        assert facet_coordinate_array_Delaunay_triangulation.shape[0] == array_Voronoi_vertices.shape[0], "The number of Delaunay triangles should match the number of Voronoi vertices."
-        #now, the tricky part--building up a useful Voronoi polygon data structure
-
-        #new strategy--I already have the Voronoi vertices and the generators, so work based off a distance matrix between them
-        distance_matrix_Voronoi_vertices_to_generators = scipy.spatial.distance.cdist(array_Voronoi_vertices,self.original_point_array)
-        #now, each row of the above distance array corresponds to a single Voronoi vertex, which each column of that row representing the distance to the respective generator point
-        #if we iterate through each of the rows and determine the indices of the minimum distances, we obtain the indices of the generators for which that voronoi vertex is a polygon vertex 
-        generator_Voronoi_region_dictionary = {} #store the indices of the generators for which a given Voronoi vertex is also a polygon vertex
-        for Voronoi_point_index, Voronoi_point_distance_array in enumerate(distance_matrix_Voronoi_vertices_to_generators):
-            Voronoi_point_distance_array = numpy.around(Voronoi_point_distance_array,decimals=3)
-            indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex = numpy.where(Voronoi_point_distance_array == Voronoi_point_distance_array.min())[0]
-            #print 'Voronoi_point_index:', Voronoi_point_index
-            #print '5 closest distances:', numpy.sort(Voronoi_point_distance_array)[0:5]
-            assert indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex.size >= 3, "By definition, a Voronoi vertex must be equidistant to at least 3 generators, but in this case only got {num_gens} generators for Voronoi vertex at {coords}, which has 5 closest distances: {distances}.".format(num_gens=indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex.size,coords=array_Voronoi_vertices[Voronoi_point_index],distances=numpy.sort(Voronoi_point_distance_array)[0:5])
-            generator_Voronoi_region_dictionary[Voronoi_point_index] = indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex #so dictionary looks like 0: array(12,17,27), ...
-
-        #now, go through the above dictionary and collect the Voronoi point indices forming the polygon for each generator index
-        dictionary_Voronoi_point_indices_for_each_generator = {}
-        for Voronoi_point_index, indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex in generator_Voronoi_region_dictionary.iteritems():
-            for generator_index in indices_of_generators_for_which_this_Voronoi_point_is_a_polygon_vertex:
-                if generator_index in dictionary_Voronoi_point_indices_for_each_generator:
-                    list_Voronoi_indices = dictionary_Voronoi_point_indices_for_each_generator[generator_index] 
-                    list_Voronoi_indices.append(Voronoi_point_index)
-                    dictionary_Voronoi_point_indices_for_each_generator[generator_index] = list_Voronoi_indices
-                else: #initialize the list of Voronoi indices for that generator key
-                    dictionary_Voronoi_point_indices_for_each_generator[generator_index] = [Voronoi_point_index]
-        #so this dictionary should have format: {generator_index: [list_of_Voronoi_indices_forming_polygon_vertices]}
-
-        def sort_voronoi_vertices(current_array_Voronoi_vertices):
-            polygon_hull_object = scipy.spatial.ConvexHull(current_array_Voronoi_vertices[...,:2]) #trying to project to 2D for edge ordering, and then restore to 3D after
-            point_indices_ordered_vertex_array = polygon_hull_object.vertices
-            current_array_Voronoi_vertices = current_array_Voronoi_vertices[point_indices_ordered_vertex_array]
-            try:
-                test_polygon_for_self_intersection(current_array_Voronoi_vertices[...,1:]) #debug
-            except IntersectionError: #try to deal with line intersection by swapping violating vertices?
-                polygon_hull_object = scipy.spatial.ConvexHull(current_array_Voronoi_vertices[...,1:]) #try a different sorting / projection
-                point_indices_ordered_vertex_array = polygon_hull_object.vertices
-                current_array_Voronoi_vertices = current_array_Voronoi_vertices[point_indices_ordered_vertex_array]
-                test_polygon_for_self_intersection(current_array_Voronoi_vertices[...,1:]) #debug: don't catch this exception because it is a real problem (the backup sorting attempt with a different projection)
-            return current_array_Voronoi_vertices
-
-        #now, I want to sort the polygon vertices in a consistent, non-intersecting fashion
+        #use strategy for Voronoi region generation discussed at PyData London 2015 with Ross Hemsley and Nikolai Nowaczyk
+        #step 1: place an additional generator at the center of the sphere
+        generator_array = numpy.concatenate((self.original_point_array, numpy.zeros((1,3))))
+        #step 2: perform 3D Delaunay triangulation on data set that includes the extra generator
+        tri = scipy.spatial.Delaunay(generator_array)
+        #step 3: produce circumspheres / circumcenters of tetrahedra from 3D Delaunay
+        list_circumcenter_coordinates = []
+        for simplex in tri.points[tri.simplices]:
+            tetrahedron_circumsphere_circumcenter = circumcircle.calc_circumcenter_circumsphere_tetrahedron_2(simplex)
+            list_circumcenter_coordinates.append(tetrahedron_circumsphere_circumcenter)
+        array_circumcenter_coords = numpy.array(list_circumcenter_coordinates)
+        #step 4: project tetrahedron circumcenters up to the surface of the sphere, to produce the Voronoi vertices
+        array_vector_lengths = scipy.spatial.distance.cdist(array_circumcenter_coords, numpy.zeros((1,3)))
+        array_Voronoi_vertices = (self.estimated_sphere_radius / numpy.abs(array_vector_lengths)) * array_circumcenter_coords
+        #step 5: use the Delaunay tetrahedralization neighbour information to connect the Voronoi vertices around the generators, to produce the Voronoi regions
         dictionary_sorted_Voronoi_point_coordinates_for_each_generator = {}
-        for generator_index, list_unsorted_Voronoi_region_vertices in dictionary_Voronoi_point_indices_for_each_generator.iteritems():
-            current_array_Voronoi_vertices = array_Voronoi_vertices[list_unsorted_Voronoi_region_vertices]
-            if current_array_Voronoi_vertices.shape[0] > 3:
-                current_array_Voronoi_vertices = sort_voronoi_vertices(current_array_Voronoi_vertices)
-            assert current_array_Voronoi_vertices.shape[0] >= 3, "All generators should be within Voronoi regions (polygons with at least 3 vertices)."
-            #check if generator falls outside its assigned Voronoi cell; if it does, add in next closest Voronoi vertex (assuming I don't have any cases with > 1 vertex missing)
-            path = Path(current_array_Voronoi_vertices[...,1:]) #build path from my second 2D projection (seems to work better in my initial tests)
-            vertices_in_path = current_array_Voronoi_vertices.shape[0]
-            if not path.contains_point(self.original_point_array[generator_index][1:]):
-                next_closest_voronoi_vertex_distance = numpy.sort(distance_matrix_Voronoi_vertices_to_generators[...,generator_index])[vertices_in_path]
-                next_closest_voronoi_vertex_index = numpy.argwhere(distance_matrix_Voronoi_vertices_to_generators[...,generator_index] == next_closest_voronoi_vertex_distance)
-                next_closest_voronoi_vertex_coord = array_Voronoi_vertices[next_closest_voronoi_vertex_index][0]
-                current_array_Voronoi_vertices = numpy.concatenate((current_array_Voronoi_vertices,next_closest_voronoi_vertex_coord))
-                current_array_Voronoi_vertices = sort_voronoi_vertices(current_array_Voronoi_vertices)
-
-            dictionary_sorted_Voronoi_point_coordinates_for_each_generator[generator_index] = current_array_Voronoi_vertices
-
+        array_tetrahedra = tri.points[tri.simplices]
+        generator_index = 0
+        for generator in tri.points[:-1]:
+            indices_of_triangles_surrounding_generator = numpy.unique(numpy.where(tri.points[tri.simplices] == generator)[0])
+            #pick any one of the triangles surrounding the generator and pick a non-generator vertex
+            first_tetrahedron_index = indices_of_triangles_surrounding_generator[0]
+            first_tetrahedron = array_tetrahedra[first_tetrahedron_index]
+            first_triangle = filter_tetrahedron_to_triangle(first_tetrahedron)
+            #pick one of the two non-generator vertices in the first triangle
+            indices_non_generator_vertices_first_triangle = numpy.unique(numpy.where(first_triangle != generator)[0])
+            ordered_list_tetrahedron_indices_surrounding_current_generator = [first_tetrahedron_index] 
+            #determine the appropriate ordering of Voronoi vertices to close the Voronoi region (polygon) by traversing the Delaunay neighbour data structure from scipy
+            vertices_remaining = len(indices_of_triangles_surrounding_generator) - 1
+            #choose the neighbour opposite the first non-generator vertex of the first triangle
+            neighbour_tetrahedral_index = tri.neighbors[first_tetrahedron_index][indices_non_generator_vertices_first_triangle[0]]
+            ordered_list_tetrahedron_indices_surrounding_current_generator.append(neighbour_tetrahedral_index)
+            vertices_remaining -= 1
+            
+            #for all subsequent triangles it is the common non-generator vertex with the previous neighbour that should be used to propagate the connection chain to the following neighbour
+            #the common vertex with the previous neighbour is the the vertex of the previous neighbour that was NOT used to locate the current neighbour
+            #since there are only two candidate vertices on the previous neighbour and I've chosen to use the vertex with index 0, the remaining vertex on the previous neighbour is the non-generator vertex with index 1
+            common_vertex_coordinate = first_triangle[indices_non_generator_vertices_first_triangle[1]]
+            while vertices_remaining > 0:
+                current_tetrahedron_index = ordered_list_tetrahedron_indices_surrounding_current_generator[-1]
+                current_tetrahedron_coord_array = array_tetrahedra[current_tetrahedron_index]
+                #it seems that it is not quite guaranteed that the last row of the tetrahedron is the origin point (though this is usually the case) -- will need a more robust filter to remove the origin and produce the relevant triangular simplex
+                current_triangle_coord_array = filter_tetrahedron_to_triangle(current_tetrahedron_coord_array)
+                indices_candidate_vertices_current_triangle_excluding_generator = numpy.unique(numpy.where(current_triangle_coord_array != generator)[0])
+                #print 'indices_candidate_vertices_current_triangle_excluding_generator:', indices_candidate_vertices_current_triangle_excluding_generator
+                #if len(indices_candidate_vertices_current_triangle_excluding_generator) > 2:
+                    #print 'current_tetrahedron_coord_array:', current_tetrahedron_coord_array
+                    #print 'current_triangle_coord_array:', current_triangle_coord_array
+                    #print 'generator_index:', generator_index
+                    #print 'generator:', generator
+                array_candidate_vertices = current_triangle_coord_array[indices_candidate_vertices_current_triangle_excluding_generator]
+                current_tetrahedron_index_for_neighbour_propagation = numpy.unique(numpy.where(current_tetrahedron_coord_array == common_vertex_coordinate)[0])
+                next_tetrahedron_index_surrounding_generator = tri.neighbors[current_tetrahedron_index][current_tetrahedron_index_for_neighbour_propagation][0]
+                if next_tetrahedron_index_surrounding_generator == -1: #debug -- trying to deal with case of 'boundary' simplex -- whatever that means on the sphere!!
+                    full_list_neighbour_indices_current_tetrahedron = tri.neighbors[current_tetrahedron_index]
+                    for neighbour_index in full_list_neighbour_indices_current_tetrahedron:
+                        if neighbour_index != -1 and neighbour_index not in ordered_list_tetrahedron_indices_surrounding_current_generator:
+                            next_tetrahedron_index_surrounding_generator = neighbour_index
+                common_vertex_coordinate = array_candidate_vertices[array_candidate_vertices != common_vertex_coordinate] #for the next iteration
+                ordered_list_tetrahedron_indices_surrounding_current_generator.append(next_tetrahedron_index_surrounding_generator)
+                vertices_remaining -= 1
+            dictionary_sorted_Voronoi_point_coordinates_for_each_generator[generator_index] = array_Voronoi_vertices[ordered_list_tetrahedron_indices_surrounding_current_generator]
+            generator_index += 1
         return dictionary_sorted_Voronoi_point_coordinates_for_each_generator
 
     def voronoi_region_surface_areas_spherical_surface(self):
