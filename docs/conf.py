@@ -57,6 +57,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
+authors = u'Tyler Reddy, Ross Hemsley, Edd Edmondson, Nikolai Nowaczyk, Joe Pitt-Francis'
 project = u'py_sphere_Voronoi'
 copyright = u'2014, Tyler Reddy'
 
