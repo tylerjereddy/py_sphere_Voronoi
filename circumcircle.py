@@ -1,6 +1,6 @@
 # coding: utf-8
 
-import numpy, math, matplotlib
+import numpy, math
 
 def calc_circumcircle(array_triangle_vertices):
     '''The input array of triangle vertices should have shape (N_triangles, 3, 2) and this function should use the vertex information to calculate and return numpy arrays containing the circumcenters and circumradii for the circumcircles of each triangle.'''
