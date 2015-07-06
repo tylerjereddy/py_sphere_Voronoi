@@ -271,7 +271,7 @@ def convert_cartesian_array_to_spherical_array(coord_array,angle_measure='radian
     xy = coord_array[...,0]**2 + coord_array[...,1]**2
     spherical_coord_array[...,0] = numpy.sqrt(xy + coord_array[...,2]**2)
     spherical_coord_array[...,1] = numpy.arctan2(coord_array[...,1], coord_array[...,0])
-    spherical_coord_array[...,2] = numpy.arccos(coord_array[...,2],spherical_coord_array[...,0])
+    spherical_coord_array[...,2] = numpy.arccos(coord_array[...,2] / spherical_coord_array[...,0])
     if angle_measure == 'degrees':
         spherical_coord_array[...,1] = numpy.degrees(spherical_coord_array[...,1])
         spherical_coord_array[...,2] = numpy.degrees(spherical_coord_array[...,2])
