@@ -209,22 +209,6 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         del self.large_sphere_radius
         del self.cartesian_coord_array_large_radius
 
-    def test_spherical_voronoi_regular_surface_area_reconstitution(self):
-        '''Surface area reconstitution for Voronoi diagram generated from regularly spaced points on unit sphere. The points at the North / South poles have been substantially spread out to improve the perforance of this test. Could easily design a test that performs much worse by closely-packing points at the poles of the unit sphere.'''
-        circumdiameter = 2.0
-        u, v = numpy.mgrid[0.01:2*numpy.pi:15j, 0.6:numpy.pi-0.6:10j] #the relative % surface area reconstituted is very sensitive to the limits specified here (densely-packed rings of generators at North / South poles can cause major issues...)
-        x=circumdiameter/2.0 * (numpy.cos(u)*numpy.sin(v))
-        y=circumdiameter/2.0 * (numpy.sin(u)*numpy.sin(v))
-        z=circumdiameter/2.0 * (numpy.cos(v))
-        input_sphere_coordinate_array = numpy.zeros((150,3))
-        input_sphere_coordinate_array[...,0] = x.ravel()
-        input_sphere_coordinate_array[...,1] = y.ravel()
-        input_sphere_coordinate_array[...,2] = z.ravel()
-        voronoi_instance = voronoi_utility.Voronoi_Sphere_Surface(input_sphere_coordinate_array,1.0)
-        dictionary_Voronoi_region_surface_areas_for_each_generator = voronoi_instance.voronoi_region_surface_areas_spherical_surface()
-        sum_Voronoi_polygon_surface_areas = sum(dictionary_Voronoi_region_surface_areas_for_each_generator.itervalues())
-        numpy.testing.assert_almost_equal(sum_Voronoi_polygon_surface_areas, self.unit_sphere_surface_area,decimal=7,err_msg='Reconstituted surface area of Voronoi polygons on unit sphere should match theoretical surface area of sphere.')
-
     def test_spherical_voronoi_surface_area_reconstitution(self):
         '''Given a pseudo-random set of points on the unit sphere, the sum of the surface areas of the Voronoi polygons should be equal to the surface area of the sphere itself.'''
         random_dist_voronoi_instance = voronoi_utility.Voronoi_Sphere_Surface(self.cartesian_coord_array,1.0)
