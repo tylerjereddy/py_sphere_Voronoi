@@ -260,7 +260,7 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         spherical_excess = sum_spherical_triangle_inner_angles - math.pi #because the radius of the sphere is 1 the spherical excess is also the surface area
         self.assertGreater(spherical_excess,0.0)
         test_surface_area = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(self.spherical_triangle_coordinate_array,1.0)
-        self.assertEqual(test_surface_area,spherical_excess,msg='Surface area of a spherical triangle (a special case of spherical polygon) not calculated correctly.')
+        numpy.testing.assert_almost_equal(test_surface_area,spherical_excess,decimal=12)
 
     def test_spherical_polygon_4_vertices_surface_area_calculation(self):
         '''Test spherical polygon surface area calculation on the more complex case of a spherical polygon with 4 vertices on a unit sphere.'''
