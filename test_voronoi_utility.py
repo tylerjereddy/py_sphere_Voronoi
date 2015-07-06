@@ -270,7 +270,7 @@ class Test_voronoi_surface_area_calculations(unittest.TestCase):
         #print 'target_area (should be pi):', target_area 
         self.assertGreater(sum_spherical_polygon_inner_angles,subtraction_value,'The polygon with 4 vertices has a negative surface area.')
         measured_surface_area = voronoi_utility.calculate_surface_area_of_a_spherical_Voronoi_polygon(self.spherical_polygon_4_vertices_coord_array, 1.0)
-        self.assertEqual(measured_surface_area,target_area,msg='Surface area of a 4-vertex spherical polygon is not calculated correctly.')
+        numpy.testing.assert_almost_equal(measured_surface_area,target_area,decimal=12)
         
     def test_spherical_polygon_4_vertices_nearly_colinear_surface_area_calculation(self):
         '''Test spherical polygon surface area calculation for a polygon with 4 vertices AND an internal angle that is very close to 180 degrees. Trying to stress test / probe possible issues with arc cosine accuracy, etc.'''
