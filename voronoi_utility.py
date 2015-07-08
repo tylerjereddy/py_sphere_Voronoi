@@ -497,12 +497,6 @@ class Voronoi_Sphere_Surface:
                 #it seems that it is not quite guaranteed that the last row of the tetrahedron is the origin point (though this is usually the case) -- will need a more robust filter to remove the origin and produce the relevant triangular simplex
                 current_triangle_coord_array = filter_tetrahedron_to_triangle(current_tetrahedron_coord_array)
                 indices_candidate_vertices_current_triangle_excluding_generator = numpy.unique(numpy.where(current_triangle_coord_array != generator)[0])
-                #print 'indices_candidate_vertices_current_triangle_excluding_generator:', indices_candidate_vertices_current_triangle_excluding_generator
-                #if len(indices_candidate_vertices_current_triangle_excluding_generator) > 2:
-                    #print 'current_tetrahedron_coord_array:', current_tetrahedron_coord_array
-                    #print 'current_triangle_coord_array:', current_triangle_coord_array
-                    #print 'generator_index:', generator_index
-                    #print 'generator:', generator
                 array_candidate_vertices = current_triangle_coord_array[indices_candidate_vertices_current_triangle_excluding_generator]
                 current_tetrahedron_index_for_neighbour_propagation = numpy.unique(numpy.where(current_tetrahedron_coord_array == common_vertex_coordinate)[0])
                 next_tetrahedron_index_surrounding_generator = tri.neighbors[current_tetrahedron_index][current_tetrahedron_index_for_neighbour_propagation][0]
