@@ -82,3 +82,33 @@ def calc_circumcenter_circumsphere_tetrahedron_2(tetrahedron_coord_array):
     circumcenter = numpy.array([x_0, y_0, z_0])
     return circumcenter
 
+def calc_circumcenter_circumsphere_tetrahedron_vectorized(tetrahedron_coord_array):
+    '''An alternative implementation based on http://mathworld.wolfram.com/Circumsphere.html because of issues with the initial implementation from the Berkeley page.
+    Vectorized version for use with multiple tetrahedra in tetrahedron_coord_array -- the latter should have shape (N, 4, 3).'''
+    num_tetrahedra = tetrahedron_coord_array.shape[0]
+    #reshape the tetrahedron_coord_array to place all tetrahedra consecutively without nesting
+    tetrahedron_coord_array = numpy.reshape(tetrahedron_coord_array, (tetrahedron_coord_array.shape[0] * tetrahedron_coord_array.shape[1], tetrahedron_coord_array.shape[2]))
+    array_stacked_a_matrices = numpy.hstack((tetrahedron_coord_array, numpy.ones((num_tetrahedra * 4, 1))))
+    first_column_array_determinant_arrays = tetrahedron_coord_array[...,0] ** 2 + tetrahedron_coord_array[...,1] ** 2 + tetrahedron_coord_array[...,2] ** 2
+    first_column_array_determinant_arrays = first_column_array_determinant_arrays[:,numpy.newaxis]
+    final_column_array_determinant_arrays = numpy.ones((first_column_array_determinant_arrays.shape[0],1))
+    array_D_x_contents_before_determinant_calculation = numpy.hstack((first_column_array_determinant_arrays, tetrahedron_coord_array[...,1:],final_column_array_determinant_arrays))
+    array_middle_column_arrays_D_y = numpy.hstack((numpy.reshape(tetrahedron_coord_array[...,0], (tetrahedron_coord_array.shape[0],1)), numpy.reshape(tetrahedron_coord_array[...,2], (tetrahedron_coord_array.shape[0],1))))
+    array_D_y_contents_before_determinant_calculation = numpy.hstack((first_column_array_determinant_arrays, array_middle_column_arrays_D_y, final_column_array_determinant_arrays))
+    array_D_z_contents_before_determinant_calculation = numpy.hstack((first_column_array_determinant_arrays, tetrahedron_coord_array[...,:-1],final_column_array_determinant_arrays))
+    #split the arrays back to stacks of matrices
+    array_D_x_contents_before_determinant_calculation = numpy.array(numpy.split(array_D_x_contents_before_determinant_calculation, num_tetrahedra))
+    array_D_y_contents_before_determinant_calculation = numpy.array(numpy.split(array_D_y_contents_before_determinant_calculation, num_tetrahedra))
+    array_D_z_contents_before_determinant_calculation = numpy.array(numpy.split(array_D_z_contents_before_determinant_calculation, num_tetrahedra))
+    array_a_contents_before_determinant_calculation = numpy.array(numpy.split(array_stacked_a_matrices, num_tetrahedra))
+    #compute the determinants for the stacks of matrices assembled above
+    array_Dx_values = numpy.linalg.det(array_D_x_contents_before_determinant_calculation)
+    array_Dy_values = - numpy.linalg.det(array_D_y_contents_before_determinant_calculation)
+    array_Dz_values = numpy.linalg.det(array_D_z_contents_before_determinant_calculation)
+    array_a_values = numpy.linalg.det(array_a_contents_before_determinant_calculation)
+    array_denominator_values = 2. * array_a_values
+    array_x0_values = array_Dx_values / array_denominator_values
+    array_y0_values = array_Dy_values / array_denominator_values
+    array_z0_values = array_Dz_values / array_denominator_values
+    circumcenter_array = numpy.hstack((array_x0_values[:,numpy.newaxis], array_y0_values[:,numpy.newaxis], array_z0_values[:,numpy.newaxis]))
+    return circumcenter_array

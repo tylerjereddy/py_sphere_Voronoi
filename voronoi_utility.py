@@ -458,21 +458,18 @@ class Voronoi_Sphere_Surface:
         generator_array = numpy.concatenate((self.original_point_array, numpy.zeros((1,3))))
         #step 2: perform 3D Delaunay triangulation on data set that includes the extra generator
         tri = scipy.spatial.Delaunay(generator_array)
+        simplex_coords = tri.points[tri.simplices]
         #step 3: produce circumspheres / circumcenters of tetrahedra from 3D Delaunay
-        list_circumcenter_coordinates = []
-        for simplex in tri.points[tri.simplices]:
-            tetrahedron_circumsphere_circumcenter = circumcircle.calc_circumcenter_circumsphere_tetrahedron_2(simplex)
-            list_circumcenter_coordinates.append(tetrahedron_circumsphere_circumcenter)
-        array_circumcenter_coords = numpy.array(list_circumcenter_coordinates)
+        array_circumcenter_coords = circumcircle.calc_circumcenter_circumsphere_tetrahedron_vectorized(simplex_coords)
         #step 4: project tetrahedron circumcenters up to the surface of the sphere, to produce the Voronoi vertices
         array_vector_lengths = scipy.spatial.distance.cdist(array_circumcenter_coords, numpy.zeros((1,3)))
         array_Voronoi_vertices = (self.estimated_sphere_radius / numpy.abs(array_vector_lengths)) * array_circumcenter_coords
         #step 5: use the Delaunay tetrahedralization neighbour information to connect the Voronoi vertices around the generators, to produce the Voronoi regions
         dictionary_sorted_Voronoi_point_coordinates_for_each_generator = {}
-        array_tetrahedra = tri.points[tri.simplices]
+        array_tetrahedra = simplex_coords
         generator_index = 0
         for generator in tri.points[:-1]:
-            indices_of_triangles_surrounding_generator = numpy.unique(numpy.where(tri.points[tri.simplices] == generator)[0])
+            indices_of_triangles_surrounding_generator = numpy.unique(numpy.where(simplex_coords == generator)[0])
             #pick any one of the triangles surrounding the generator and pick a non-generator vertex
             first_tetrahedron_index = indices_of_triangles_surrounding_generator[0]
             first_tetrahedron = array_tetrahedra[first_tetrahedron_index]
