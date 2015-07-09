@@ -468,8 +468,13 @@ class Voronoi_Sphere_Surface:
         dictionary_sorted_Voronoi_point_coordinates_for_each_generator = {}
         array_tetrahedra = simplex_coords
         generator_index = 0
+        generator_index_array = numpy.arange(self.original_point_array.shape[0])
+        filter_tuple = numpy.where((numpy.expand_dims(tri.simplices, -1) == generator_index_array).any(axis=1))
+        df = pandas.DataFrame({'generator_indices' : filter_tuple[1]}, index = filter_tuple[0])
+        gb = df.groupby('generator_indices')
+        dictionary_generators_and_triangle_indices_containing_those_generators = gb.groups
         for generator in tri.points[:-1]:
-            indices_of_triangles_surrounding_generator = numpy.where(tri.simplices == generator_index)[0]
+            indices_of_triangles_surrounding_generator = dictionary_generators_and_triangle_indices_containing_those_generators[generator_index]
             #pick any one of the triangles surrounding the generator and pick a non-generator vertex
             first_tetrahedron_index = indices_of_triangles_surrounding_generator[0]
             first_tetrahedron = array_tetrahedra[first_tetrahedron_index]
