@@ -469,7 +469,7 @@ class Voronoi_Sphere_Surface:
         array_tetrahedra = simplex_coords
         generator_index = 0
         for generator in tri.points[:-1]:
-            indices_of_triangles_surrounding_generator = numpy.unique(numpy.where(simplex_coords == generator)[0])
+            indices_of_triangles_surrounding_generator = numpy.where(tri.simplices == generator_index)[0]
             #pick any one of the triangles surrounding the generator and pick a non-generator vertex
             first_tetrahedron_index = indices_of_triangles_surrounding_generator[0]
             first_tetrahedron = array_tetrahedra[first_tetrahedron_index]
