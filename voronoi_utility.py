@@ -444,21 +444,21 @@ class Voronoi_Sphere_Surface:
             self.estimated_sphere_radius = numpy.average(scipy.spatial.distance.cdist(self.original_point_array,self.sphere_centroid[numpy.newaxis,:]))
         else: 
             self.estimated_sphere_radius = sphere_radius #if the radius of the sphere is known, it is pobably best to specify to avoid centroid bias in radius estimation, etc.
-        self.hull_instance = scipy.spatial.ConvexHull(self.original_point_array)
 
     def delaunay_triangulation_spherical_surface(self):
         '''Delaunay tessellation of the points on the surface of the sphere. This is simply the 3D convex hull of the points. Returns a shape (N,3,3) array of points representing the vertices of the Delaunay triangulation on the sphere (i.e., N three-dimensional triangle vertex arrays).'''
-        array_points_vertices_Delaunay_triangulation = produce_triangle_vertex_coordinate_array_Delaunay_sphere(self.hull_instance)
+        hull = scipy.spatial.ConvexHull(self.original_point_array)
+        array_points_vertices_Delaunay_triangulation = produce_triangle_vertex_coordinate_array_Delaunay_sphere(hull)
         return array_points_vertices_Delaunay_triangulation
 
     def voronoi_region_vertices_spherical_surface(self):
         '''Returns a dictionary with the sorted (non-intersecting) polygon vertices for the Voronoi regions associated with each generator (original data point) index. A dictionary entry would be structured as follows: `{generator_index : array_polygon_vertices, ...}`.'''
         #use strategy for Voronoi region generation discussed at PyData London 2015 with Ross Hemsley and Nikolai Nowaczyk
-        #step 1: place an additional generator at the center of the sphere
-        generator_array = numpy.concatenate((self.original_point_array, numpy.zeros((1,3))))
         #step 2: perform 3D Delaunay triangulation on data set that includes the extra generator
-        tri = scipy.spatial.Delaunay(generator_array)
-        simplex_coords = tri.points[tri.simplices]
+        tri = scipy.spatial.ConvexHull(self.original_point_array) #using ConvexHull is much faster in scipy (vs. Delaunay), but here we only get the triangles on the sphere surface in the simplices object (no longer adding an extra point at the origin at this stage)
+        #add the origin to each of the simplices to get the same tetrahedra we'd have gotten from Delaunay tetrahedralization
+        simplex_coords = tri.points[tri.simplices] #triangles on surface surface
+        simplex_coords = numpy.insert(simplex_coords, 3, numpy.zeros((1,3)), axis = 1)
         #step 3: produce circumspheres / circumcenters of tetrahedra from 3D Delaunay
         array_circumcenter_coords = circumcircle.calc_circumcenter_circumsphere_tetrahedron_vectorized(simplex_coords)
         #step 4: project tetrahedron circumcenters up to the surface of the sphere, to produce the Voronoi vertices
