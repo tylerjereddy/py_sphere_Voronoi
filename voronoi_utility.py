@@ -497,11 +497,6 @@ class Voronoi_Sphere_Surface:
                 array_candidate_vertices = current_triangle_coord_array[indices_candidate_vertices_current_triangle_excluding_generator]
                 current_tetrahedron_index_for_neighbour_propagation = numpy.unique(numpy.where(current_tetrahedron_coord_array == common_vertex_coordinate)[0])
                 next_tetrahedron_index_surrounding_generator = tri.neighbors[current_tetrahedron_index][current_tetrahedron_index_for_neighbour_propagation][0]
-                if next_tetrahedron_index_surrounding_generator == -1: #debug -- trying to deal with case of 'boundary' simplex -- whatever that means on the sphere!!
-                    full_list_neighbour_indices_current_tetrahedron = tri.neighbors[current_tetrahedron_index]
-                    for neighbour_index in full_list_neighbour_indices_current_tetrahedron:
-                        if neighbour_index != -1 and neighbour_index not in ordered_list_tetrahedron_indices_surrounding_current_generator:
-                            next_tetrahedron_index_surrounding_generator = neighbour_index
                 common_vertex_coordinate = array_candidate_vertices[array_candidate_vertices != common_vertex_coordinate] #for the next iteration
                 ordered_list_tetrahedron_indices_surrounding_current_generator.append(next_tetrahedron_index_surrounding_generator)
                 vertices_remaining -= 1
