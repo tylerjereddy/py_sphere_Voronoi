@@ -174,28 +174,29 @@ def calculate_surface_area_of_planar_polygon_in_3D_space(array_ordered_Voronoi_p
     return planar_polygon_surface_area
 
 def calculate_surface_area_of_a_spherical_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius):
-    '''Calculate the surface area of a polygon on the surface of a sphere. Based on equation provided here: http://mathworld.wolfram.com/LHuiliersTheorem.html'''
-    '''Decompose into triangles, calculate excess for each'''
+    '''Calculate the surface area of a polygon on the surface of a sphere. Based on equation provided here: http://mathworld.wolfram.com/LHuiliersTheorem.html
+    Decompose into triangles, calculate excess for each'''
+    #have to convert to unit sphere before applying the formula
+    spherical_coordinates = convert_cartesian_array_to_spherical_array(array_ordered_Voronoi_polygon_vertices)
+    spherical_coordinates[...,0] = 1.0
+    array_ordered_Voronoi_polygon_vertices = convert_spherical_array_to_cartesian_array(spherical_coordinates)
     n = array_ordered_Voronoi_polygon_vertices.shape[0]
-    
     #point we start from
     root_point = array_ordered_Voronoi_polygon_vertices[0]
     totalexcess = 0
-
     #loop from 1 to n-2, with point 2 to n-1 as other vertex of triangle
     # this could definitely be written more nicely
     b_point = array_ordered_Voronoi_polygon_vertices[1]
     root_b_dist = calculate_haversine_distance_between_spherical_points(root_point, b_point, 1.0)
-    for i in 1+numpy.arange(n-2):
-	    a_point = b_point
-	    b_point = array_ordered_Voronoi_polygon_vertices[i+1]
-	    root_a_dist = root_b_dist
-	    root_b_dist = calculate_haversine_distance_between_spherical_points(root_point, b_point, 1.0)
-	    a_b_dist = calculate_haversine_distance_between_spherical_points(a_point, b_point, 1.0)
-	    s = (root_a_dist + root_b_dist + a_b_dist) / 2
-	    totalexcess += 4 * math.atan(math.sqrt( math.tan(0.5 * s) * math.tan(0.5 * (s-root_a_dist)) * math.tan(0.5 * (s-root_b_dist)) * math.tan(0.5 * (s-a_b_dist))))
-	
-    return totalexcess
+    for i in 1 + numpy.arange(n - 2):
+        a_point = b_point
+        b_point = array_ordered_Voronoi_polygon_vertices[i+1]
+        root_a_dist = root_b_dist
+        root_b_dist = calculate_haversine_distance_between_spherical_points(root_point, b_point, 1.0)
+        a_b_dist = calculate_haversine_distance_between_spherical_points(a_point, b_point, 1.0)
+        s = (root_a_dist + root_b_dist + a_b_dist) / 2
+        totalexcess += 4 * math.atan(math.sqrt( math.tan(0.5 * s) * math.tan(0.5 * (s-root_a_dist)) * math.tan(0.5 * (s-root_b_dist)) * math.tan(0.5 * (s-a_b_dist))))
+    return totalexcess * (sphere_radius ** 2)
 
 def calculate_and_sum_up_inner_sphere_surface_angles_Voronoi_polygon(array_ordered_Voronoi_polygon_vertices,sphere_radius):
     '''Takes an array of ordered Voronoi polygon vertices (for a single generator) and calculates the sum of the inner angles on the sphere surface. The resulting value is theta in the equation provided here: http://mathworld.wolfram.com/SphericalPolygon.html '''
