@@ -9,6 +9,7 @@ import math
 import voronoi_utility
 import networkx as nx
 import random
+import pandas
 
 class Test_delaunay_triangulation_on_sphere_surface(unittest.TestCase):
 
@@ -343,12 +344,33 @@ class Test_haversine_and_Vincenty_code(unittest.TestCase):
         numpy.testing.assert_almost_equal(calculated_spherical_distance,self.distance_on_sphere_2,decimal=6)
             
         
+class Test_Spherical_Voronoi_Diagram_Properties(unittest.TestCase):
 
-        
-        
-        
-        
+    def setUp(self):
+        self.test_sphere_radius = 1.0
+        self.num_generators = 100
+        self.prng = numpy.random.RandomState(117)
+        self.random_spherical_coord_array = voronoi_utility.generate_random_array_spherical_generators(self.num_generators, self.test_sphere_radius, self.prng)
 
+    def tearDown(self):
+        del self.test_sphere_radius
+        del self.num_generators
+        del self.prng
+        del self.random_spherical_coord_array
 
-
+    def test_max_allowed_spherical_Voronoi_vertices(self):
+        '''My empirical testing suggests that there is a maximum of 2n - 4 Voronoi vertices allowed on the surface of the sphere (where n is the number of generators), although ideally we'd like to see a formal proof for this. This maximum is one greater than the maximum allowed for the planar case, 2n - 5, as proven formally in Theorem 4.12 in Discrete and Computational Geometry (Devadoss and O'Rourke, 2011).'''
+        max_allowed_spherical_Voronoi_vertices = (2 * self.num_generators) - 4
+        #loop through and identify the actual number of unique Voronoi vertices produced by the algorithm in this code
+        spherical_voronoi_instance = voronoi_utility.Voronoi_Sphere_Surface(self.random_spherical_coord_array, self.test_sphere_radius)
+        dictionary_voronoi_regions = spherical_voronoi_instance.voronoi_region_vertices_spherical_surface()
+        list_voronoi_vertices = []
+        for generator_index, voronoi_vertex_array in dictionary_voronoi_regions.iteritems():
+            for voronoi_vertex in voronoi_vertex_array:
+                list_voronoi_vertices.append(voronoi_vertex)
+        array_voronoi_vertices = numpy.array(list_voronoi_vertices)
+        df = pandas.DataFrame(array_voronoi_vertices)
+        df_unique_vertices = df.drop_duplicates()
+        actual_number_unique_spherical_Voronoi_vertices = df_unique_vertices.shape[0]
+        self.assertLessEqual(actual_number_unique_spherical_Voronoi_vertices, max_allowed_spherical_Voronoi_vertices, 'The maximum number of Voronoi vertices allowed on the spherical surface should be 2n - 4.')
 
