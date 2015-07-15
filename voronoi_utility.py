@@ -407,8 +407,7 @@ class Voronoi_Sphere_Surface:
     >>> reconstituted_surface_area_Voronoi_regions = sum(dictionary_voronoi_polygon_surface_areas.itervalues())
     >>> percent_area_recovery = round((reconstituted_surface_area_Voronoi_regions / theoretical_surface_area_unit_sphere) * 100., 5)
     >>> print percent_area_recovery
-    97.87551
-    >>> #that seems reasonable for now
+    99.91979
 
     For completeness, produce the Delaunay triangulation on the surface of the unit sphere for the same data set:
 
