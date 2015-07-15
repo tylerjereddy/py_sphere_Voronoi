@@ -509,7 +509,7 @@ class Voronoi_Sphere_Surface:
         return dictionary_sorted_Voronoi_point_coordinates_for_each_generator
 
     def voronoi_region_surface_areas_spherical_surface(self):
-        '''Returns a dictionary with the estimated surface areas of the Voronoi region polygons corresponding to each generator (original data point) index. Attempts to calculate the spherical surface area but falls back to a planar estimate if the spherical excess is <= 0. An example dictionary entry: `{generator_index : surface_area, ...}`.'''
+        '''Returns a dictionary with the estimated surface areas of the Voronoi region polygons corresponding to each generator (original data point) index. An example dictionary entry: `{generator_index : surface_area, ...}`.'''
         dictionary_sorted_Voronoi_point_coordinates_for_each_generator = self.voronoi_region_vertices_spherical_surface()
         dictionary_Voronoi_region_surface_areas_for_each_generator = {}
         for generator_index, Voronoi_polygon_sorted_vertex_array in dictionary_sorted_Voronoi_point_coordinates_for_each_generator.iteritems():
