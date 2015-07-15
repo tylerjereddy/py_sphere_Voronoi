@@ -345,22 +345,17 @@ class Voronoi_Sphere_Surface:
     Notes
     -----
 
-    Note that, at the moment, the code is using a pure planar surface area calculation instead of performing the spherical surface area calculation described below. This is because of the buggy behaviour of the spherical polygon surface area code and the generally more robust performance of the planar code for a wide variety of test cases. The accuracy of the planar surface area calculations will depend on the density of generators -- a high density should generally perform much better than a low density. Basically, it will be important to monitor the extent of reconstitution for specific cases when using the code in its current state.
+    The spherical Voronoi diagram algorithm proceeds as follows. The Convex Hull of the input points (generators) is calculated, and is equivalent to their Delaunay triangulation on the surface of the sphere [Caroli]_. A 3D Delaunay tetrahedralization is obtained by including the origin of the coordinate system as the fourth vertex of each simplex of the Convex Hull. The circumcenters of all tetrahedra in the system are calculated and projected to the surface of the sphere, producing the Voronoi vertices. The Delaunay tetrahedralization neighbour information is then used to order the Voronoi region vertices around each generator. The latter approach is substantially less sensitive to floating point issues than angle-based methods of Voronoi region vertex sorting.
 
-    The algorithm depends on the important realization that the convex hull of the generators on the sphere surface is equivalent to the Delaunay triangulation [Caroli]_. The Delaunay facet normals are then equivalent to the Voronoi vertices on the surface of the sphere [Fortune]_. The fact that each Voronoi vertex is equidistant to at least three generators can be used to build an appropriate data structure associating Voronoi vertices with their contained generator.
+    The surface area of spherical polygons is calculated by decomposing them into triangles and using L'Huilier's Theorem to calculate the spherical excess of each triangle [Weisstein]_. The sum of the spherical excesses is multiplied by the square of the sphere radius to obtain the surface area of the spherical polygon. For nearly-degenerate spherical polygons an area of approximately 0 is returned by default, rathen than attempting the unstable calculation. 
 
-    The calculation of surface areas for the Voronoi regions currently appears to be susceptible to numerical instabilities, which may in part relate to arc cosine operations. For example, sphere radii of 1.9999 or 87.0 are pathological test cases but radii of 2.0 or 1.1 are tolerated. In theory, the surface area of a spherical polygon can be calculated using the following equation [Weisstein]_:
-
-    .. math:: S = [\\theta - (n-2) \pi]R^2
-
-    Where :math:`\\theta` is the sum of the inner angles of the polygon, :math:`R` is sphere radius, and :math:`n` is the number of polygon vertices. Unfortunately, as `n` approaches a large number of vertices and / or in the presence of nearly-coplanar vertices, the equation is susceptible to producing invalid areas :math:`\le 0`. In such cases, the algorithm falls back to a conventional surface area calculation for a planar polygon, as an approximation.
+    Empirical assessment of spherical Voronoi algorithm performance suggests quadratic time complexity (loglinear is optimal, but algorithms are more challenging to implement). The reconstitution of the surface are of the sphere, measured as the sum of the surface areas of all Voronoi regions, is closest to 100 % for larger (>> 10) numbers of generators. 
 
     References
     ----------
     
     .. [Caroli] Caroli et al. (2009) INRIA 7004
-    .. [Fortune] Fortune, S. http://www.qhull.org/html/qdelaun.htm
-    .. [Weisstein] Weisstein, Eric W. "Spherical Polygon." From MathWorld--A Wolfram Web Resource. http://mathworld.wolfram.com/SphericalPolygon.html
+    .. [Weisstein] "L'Huilier's Theorem." From MathWorld--A Wolfram Web Resource. http://mathworld.wolfram.com/LHuiliersTheorem.html
     
     Examples
     --------
