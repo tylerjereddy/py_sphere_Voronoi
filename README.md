@@ -1,5 +1,6 @@
 Voronoi diagrams on the surface of a Sphere
 ===========================================
+Note that the most robust version of this code is now in a scipy PR: https://github.com/scipy/scipy/pull/5232
 
 Slides from PyData London 2015 presentation about this package: https://www.slideshare.net/slideshow/embed_code/key/1bKCEyHa789nBe
 
