@@ -1,5 +1,8 @@
 Voronoi diagrams on the surface of a Sphere
 ===========================================
+
+**Update: Please use `scipy 0.18` (`scipy.spatial.SphericalVoronoi`) for performing spherical Voronoi diagram calculations in Python -- the most robust version of the code is there, while this repo mostly exists for historical reasons and may contain bugs that have been patched by the collaborative work implementing the algorithm into scipy.**
+
 Note that the most robust version of this code is now in a scipy PR: https://github.com/scipy/scipy/pull/5232
 
 Slides from PyData London 2015 presentation about this package: https://www.slideshare.net/slideshow/embed_code/key/1bKCEyHa789nBe
